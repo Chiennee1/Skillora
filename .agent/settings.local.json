@@ -1,0 +1,38 @@
+{
+  "$comment": "PRIVATE — DO NOT COMMIT TO GIT",
+
+  "local_overrides": {
+    "db_host": "localhost",
+    "db_port": 3306,
+    "db_name": "Skillora",
+    "db_user": "root",
+    "db_password": "123456",
+    "redis_host": "localhost",
+    "redis_port": 6379,
+    "server_port": 8080
+  },
+
+  "api_keys": {
+    "jwt_secret": "skillora-super-secret-key-need-at-least-32-bytes-long",
+    "gemini_api_key": "",
+    "google_client_id": "",
+    "google_client_secret": "",
+    "vnpay_tmn_code": "",
+    "vnpay_hash_secret": "",
+    "momo_partner_code": "",
+    "momo_access_key": "",
+    "momo_secret_key": "",
+    "cloudinary_cloud_name": "",
+    "cloudinary_api_key": "",
+    "cloudinary_api_secret": "",
+    "bunny_api_key": "",
+    "bunny_library_id": ""
+  },
+
+  "debug": {
+    "verbose_sql": true,
+    "verbose_security": false,
+    "execution_log_enabled": true,
+    "warn_threshold_ms": 500
+  }
+}

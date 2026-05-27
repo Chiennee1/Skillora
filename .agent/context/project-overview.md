@@ -1,0 +1,55 @@
+# Context: Project Overview
+
+> Snapshot of Skillora project state. Updated: 2026-05-27.
+
+## Project Summary
+
+| Attribute | Value |
+|-----------|-------|
+| Name | Skillora Platform |
+| Type | E-Learning Platform Backend |
+| Stack | Spring Boot 3.5.14, Java 17, MySQL 8+, Redis 7 |
+| Architecture | Layered (Controller → Service → Repository → Entity) |
+| API Base | `/api/v1` |
+| Planned Modules | 10 (user, course, enrollment, quiz, assignment, commerce, review, chat, notification, admin) |
+| Java Files | 1 (freshly initialized) |
+| Test Suites | 0 (to be created) |
+| DB Tables | 30+ (full schema designed, seed data ready) |
+
+## Completion Status
+
+| Module | Status | Completeness |
+|--------|--------|-------------|
+| User + Auth + JWT + OAuth2 | ❌ Not started | 0% |
+| Course Catalog + Content | ❌ Not started | 0% |
+| Enrollment + Progress | ❌ Not started | 0% |
+| Quiz Engine | ❌ Not started | 0% |
+| Assignment + Grading | ❌ Not started | 0% |
+| Commerce (Cart + Payment) | ❌ Not started | 0% |
+| Review/Rating | ❌ Not started | 0% |
+| AI Chatbot (Gemini) | ❌ Not started | 0% |
+| Notifications | ❌ Not started | 0% |
+| Admin Dashboard | ❌ Not started | 0% |
+
+## What's Ready
+
+| Asset | Status | Notes |
+|-------|--------|-------|
+| DB Schema | ✅ Complete | `database/skill_database_schema.sql` — 30+ tables, 3 views |
+| Seed Data | ✅ Complete | `database/skillora_seed_data.sql` — sample data |
+| Spring Boot scaffold | ✅ Created | `SkilloraPlatformApplication.java` + pom.xml |
+| Maven dependencies | ✅ Configured | Web, Security, OAuth2, Validation, MySQL, Lombok |
+| Agent framework | ✅ Configured | `.agent/` directory with rules, skills, context |
+
+## External Dependencies
+
+| Service | Status | Config |
+|---------|--------|--------|
+| MySQL 8+ | ✅ Required | `DB_*` env vars |
+| Redis 7 | ⚡ Optional | Fallback to simple cache |
+| VNPay | 🔲 To configure | Primary payment gateway |
+| MoMo | 🔲 To configure | Secondary payment gateway |
+| Gemini AI | 🔲 To configure | AI Studio API key |
+| Cloudinary | 🔲 To configure | Image upload |
+| Bunny Stream | 🔲 To configure | Video course hosting |
+| SMTP (MailHog) | ⚡ Optional | Disabled by default |

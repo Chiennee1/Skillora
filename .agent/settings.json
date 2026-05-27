@@ -1,0 +1,83 @@
+{
+  "$schema": "https://skillora.com/agent-settings-schema.json",
+  "version": "1.0.0",
+  "project": "skillora",
+
+  "permissions": {
+    "allow_file_create": true,
+    "allow_file_edit": true,
+    "allow_file_delete": false,
+    "allow_command_run": true,
+    "allow_network_access": true,
+    "auto_approve_safe_commands": true,
+    "protected_paths": [
+      ".env",
+      ".env.docker",
+      "database/skill_database_schema.sql",
+      "src/main/resources/application.properties"
+    ]
+  },
+
+  "tools": {
+    "build": "cd skillora_platform && .\\mvnw.cmd compile",
+    "run": "cd skillora_platform && .\\mvnw.cmd spring-boot:run",
+    "run_dev": "cd skillora_platform && .\\mvnw.cmd spring-boot:run \"-Dspring-boot.run.profiles=dev\"",
+    "test": "cd skillora_platform && .\\mvnw.cmd test",
+    "test_single": "cd skillora_platform && .\\mvnw.cmd test -Dtest={testClass}",
+    "package": "cd skillora_platform && .\\mvnw.cmd clean package -DskipTests",
+    "docker_up": "cd skillora_platform && docker-compose up -d",
+    "docker_down": "cd skillora_platform && docker-compose down",
+    "docker_build": "cd skillora_platform && docker-compose up --build -d"
+  },
+
+  "mcp_servers": {
+    "mysql": {
+      "enabled": true,
+      "config_file": "mcp-tools/database.md"
+    },
+    "redis": {
+      "enabled": true,
+      "config_file": "mcp-tools/database.md"
+    },
+    "maven": {
+      "enabled": true,
+      "config_file": "mcp-tools/spring-boot.md"
+    },
+    "docker": {
+      "enabled": true,
+      "config_file": "mcp-tools/docker.md"
+    }
+  },
+
+  "hooks": {
+    "pre_commit": "hooks/pre-commit.md",
+    "post_edit": "hooks/post-edit.md",
+    "pre_test": "hooks/pre-test.md",
+    "on_error": "hooks/on-error.md",
+    "on_new_file": "hooks/on-new-file.md",
+    "on_deploy": "hooks/on-deploy.md"
+  },
+
+  "context": {
+    "always_load": [
+      "AGENT.md",
+      "memory.md"
+    ],
+    "load_on_demand": [
+      "context/project-overview.md",
+      "context/module-map.md",
+      "context/api-catalog.md"
+    ]
+  },
+
+  "code_style": {
+    "java_version": 17,
+    "indent": 4,
+    "max_line_length": 120,
+    "import_order": ["java", "jakarta", "org.springframework", "com.example.skillora_platform", "lombok"],
+    "use_lombok": true,
+    "use_builder_pattern": true,
+    "dto_suffix_request": "Request",
+    "dto_suffix_response": "Response"
+  }
+}
