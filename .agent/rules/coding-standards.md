@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Rule: Coding Standards
 
 > Quy chuẩn viết code cho dự án Skillora (Java 17 + Spring Boot 3.x).

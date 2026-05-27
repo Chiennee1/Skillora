@@ -12,14 +12,15 @@
 | Architecture | Layered (Controller → Service → Repository → Entity) |
 | API Base | `/api/v1` |
 | Planned Modules | 10 (user, course, enrollment, quiz, assignment, commerce, review, chat, notification, admin) |
-| Java Files | 1 (freshly initialized) |
-| Test Suites | 0 (to be created) |
+| Java Files | 12 |
+| Test Suites | 4 |
 | DB Tables | 30+ (full schema designed, seed data ready) |
 
 ## Completion Status
 
 | Module | Status | Completeness |
 |--------|--------|-------------|
+| Foundation/Core Config | ✅ Complete | 100% |
 | User + Auth + JWT + OAuth2 | ❌ Not started | 0% |
 | Course Catalog + Content | ❌ Not started | 0% |
 | Enrollment + Progress | ❌ Not started | 0% |
@@ -38,7 +39,8 @@
 | DB Schema | ✅ Complete | `database/skill_database_schema.sql` — 30+ tables, 3 views |
 | Seed Data | ✅ Complete | `database/skillora_seed_data.sql` — sample data |
 | Spring Boot scaffold | ✅ Created | `SkilloraPlatformApplication.java` + pom.xml |
-| Maven dependencies | ✅ Configured | Web, Security, OAuth2, Validation, MySQL, Lombok |
+| Core foundation | ✅ Complete | `common`, `exception`, `config` packages with tests |
+| Maven dependencies | ✅ Configured | Web, Security, OAuth2 Resource Server, JPA, Validation, Actuator, SpringDoc, MySQL, H2, Lombok |
 | Agent framework | ✅ Configured | `.agent/` directory with rules, skills, context |
 
 ## External Dependencies

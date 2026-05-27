@@ -40,6 +40,16 @@
 - **Reason**: Most frequently accessed, relatively stable data
 - **Eviction**: All write operations on courses trigger `@CacheEvict(allEntries = true)`
 
+### AD-008: Foundation Security with Spring Resource Server (2026-05-27)
+- **Decision**: Use Spring Security OAuth2 Resource Server with HS256 JWT encoder/decoder for API authentication.
+- **Reason**: Keeps JWT validation inside the Spring Security filter chain and avoids a custom JWT filter at the foundation phase.
+- **Implementation**: JWT roles are read from the `roles` claim and converted to `ROLE_*` authorities.
+
+### AD-009: Standard API Envelope at Framework Boundaries (2026-05-27)
+- **Decision**: Use `ApiResponse<T>` and `PageResponse<T>` as shared response contracts, including security 401/403 errors.
+- **Reason**: Keeps controller, validation, business exception, and security error responses consistent for all future modules.
+- **Implementation**: MVC exceptions are handled by `GlobalExceptionHandler`; security filter errors are written by `SecurityConfig`.
+
 ## Lessons Learned
 
 <!-- Will be populated as the project develops -->
