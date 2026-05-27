@@ -1,6 +1,6 @@
 # Context: Project Overview
 
-> Snapshot of Skillora project state. Updated: 2026-05-27.
+> Snapshot of Skillora project state. Updated: 2026-05-28.
 
 ## Project Summary
 
@@ -12,8 +12,8 @@
 | Architecture | Layered (Controller → Service → Repository → Entity) |
 | API Base | `/api/v1` |
 | Planned Modules | 10 (user, course, enrollment, quiz, assignment, commerce, review, chat, notification, admin) |
-| Java Files | 12 |
-| Test Suites | 4 |
+| Java Files | 115 |
+| Test Suites | 7 |
 | DB Tables | 30+ (full schema designed, seed data ready) |
 
 ## Completion Status
@@ -21,8 +21,8 @@
 | Module | Status | Completeness |
 |--------|--------|-------------|
 | Foundation/Core Config | ✅ Complete | 100% |
-| User + Auth + JWT + OAuth2 | ❌ Not started | 0% |
-| Course Catalog + Content | ❌ Not started | 0% |
+| User + Auth + JWT + OAuth2 | ✅ Complete | 100% |
+| Course Catalog + Content | ✅ Complete | 100% |
 | Enrollment + Progress | ❌ Not started | 0% |
 | Quiz Engine | ❌ Not started | 0% |
 | Assignment + Grading | ❌ Not started | 0% |
@@ -40,6 +40,8 @@
 | Seed Data | ✅ Complete | `database/skillora_seed_data.sql` — sample data |
 | Spring Boot scaffold | ✅ Created | `SkilloraPlatformApplication.java` + pom.xml |
 | Core foundation | ✅ Complete | `common`, `exception`, `config` packages with tests |
+| User/Auth module | ✅ Complete | Register/login/refresh/logout/reset/profile/instructor/OAuth2 callback with integration tests |
+| Course module | ✅ Complete | Categories, courses, sections, lessons, resources, ownership, Bunny TUS upload ticket |
 | Maven dependencies | ✅ Configured | Web, Security, OAuth2 Resource Server, JPA, Validation, Actuator, SpringDoc, MySQL, H2, Lombok |
 | Agent framework | ✅ Configured | `.agent/` directory with rules, skills, context |
 
@@ -53,5 +55,5 @@
 | MoMo | 🔲 To configure | Secondary payment gateway |
 | Gemini AI | 🔲 To configure | AI Studio API key |
 | Cloudinary | 🔲 To configure | Image upload |
-| Bunny Stream | 🔲 To configure | Video course hosting |
+| Bunny Stream | 🔲 To configure | `BUNNY_LIBRARY_ID`, `BUNNY_API_KEY`, TUS upload ticket flow implemented |
 | SMTP (MailHog) | ⚡ Optional | Disabled by default |

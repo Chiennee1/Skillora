@@ -8,6 +8,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,6 +21,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -35,6 +37,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.example.skillora_platform.common.ApiResponse;
+import com.example.skillora_platform.common.Constants;
+import com.example.skillora_platform.user.service.OAuth2AuthenticationSuccessHandler;
 
 import lombok.RequiredArgsConstructor;
 
@@ -46,7 +50,6 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
             "/actuator/health",
             "/actuator/health/**",
-            "/api/v1/auth/**",
             "/oauth2/**",
             "/login/oauth2/**",
             "/v3/api-docs/**",
@@ -57,6 +60,8 @@ public class SecurityConfig {
     private final CorsProperties corsProperties;
     private final JwtProperties jwtProperties;
     private final ObjectMapper objectMapper;
+    private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
+    private final ObjectProvider<OAuth2AuthenticationSuccessHandler> oAuth2SuccessHandlerProvider;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -67,6 +72,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.POST, Constants.AUTH_API_PREFIX + "/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, Constants.AUTH_API_PREFIX + "/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, Constants.AUTH_API_PREFIX + "/refresh").permitAll()
+                        .requestMatchers(HttpMethod.POST, Constants.AUTH_API_PREFIX + "/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, Constants.AUTH_API_PREFIX + "/forgot-password").permitAll()
+                        .requestMatchers(HttpMethod.POST, Constants.AUTH_API_PREFIX + "/reset-password").permitAll()
+                        .requestMatchers(HttpMethod.GET, Constants.INSTRUCTOR_API_PREFIX + "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, Constants.CATEGORY_API_PREFIX).permitAll()
+                        .requestMatchers(HttpMethod.GET, Constants.COURSE_API_PREFIX).permitAll()
+                        .requestMatchers(HttpMethod.GET, Constants.COURSE_API_PREFIX + "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, Constants.LESSON_API_PREFIX + "/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
@@ -78,6 +94,11 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
                         .jwtAuthenticationConverter(jwtAuthenticationConverter())
                 ));
+
+        if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {
+            http.oauth2Login(oauth2 -> oauth2
+                    .successHandler(oAuth2SuccessHandlerProvider.getObject()));
+        }
 
         return http.build();
     }

@@ -56,3 +56,11 @@ skillora:
       secret: ${JWT_SECRET:skillora-local-development-secret-32-bytes}
       access-token-ttl: PT15M
       refresh-token-ttl: P7D
+  oauth2:
+    authorized-redirect-uri: ${OAUTH2_AUTHORIZED_REDIRECT_URI:http://localhost:5173/oauth2/redirect}
+  video:
+    bunny:
+      library-id: ${BUNNY_LIBRARY_ID:}
+      api-key: ${BUNNY_API_KEY:}
+      tus-endpoint: ${BUNNY_TUS_ENDPOINT:https://video.bunnycdn.com/tusupload}
+      upload-expiration: ${BUNNY_UPLOAD_EXPIRATION:PT24H}

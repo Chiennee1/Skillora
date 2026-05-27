@@ -1,6 +1,6 @@
 # Context: API Catalog
 
-> Planned API endpoint catalog for Skillora. Updated: 2026-05-27.
+> Planned API endpoint catalog for Skillora. Updated: 2026-05-28.
 > Status: 🔲 = Planned, ✅ = Implemented
 
 ## Foundation Endpoints
@@ -13,40 +13,48 @@
 
 ## User & Auth Module
 
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| POST | `/api/v1/auth/register` | Public | — | Register new user |
-| POST | `/api/v1/auth/login` | Public | — | Login, returns JWT tokens |
-| POST | `/api/v1/auth/refresh` | Public | — | Refresh access token |
-| POST | `/api/v1/auth/logout` | Public | — | Logout (revoke refresh token) |
-| POST | `/api/v1/auth/forgot-password` | Public | — | Request password reset |
-| POST | `/api/v1/auth/reset-password` | Public | — | Reset password with token |
-| GET | `/api/v1/auth/me` | JWT | Any | Get current user info |
-| GET | `/oauth2/authorization/google` | Public | — | Google OAuth2 login |
-| GET | `/api/v1/profiles/me` | JWT | Any | Get my profile |
-| PUT | `/api/v1/profiles/me` | JWT | Any | Update my profile |
-| GET | `/api/v1/instructors/{id}` | Public | — | Get instructor profile |
+| Status | Method | Path | Auth | Role | Description |
+|--------|--------|------|------|------|-------------|
+| ✅ | POST | `/api/v1/auth/register` | Public | — | Register STUDENT or INSTRUCTOR user |
+| ✅ | POST | `/api/v1/auth/login` | Public | — | Login, returns JWT tokens |
+| ✅ | POST | `/api/v1/auth/refresh` | Public | — | Rotate refresh token and return new JWT tokens |
+| ✅ | POST | `/api/v1/auth/logout` | Public | — | Logout, idempotently revoke refresh token |
+| ✅ | POST | `/api/v1/auth/forgot-password` | Public | — | Request password reset; dev/test returns reset token |
+| ✅ | POST | `/api/v1/auth/reset-password` | Public | — | Reset password with token |
+| ✅ | GET | `/api/v1/auth/me` | JWT | Any | Get current user info |
+| ✅ | GET | `/oauth2/authorization/google` | Public | — | Google OAuth2 login when Google client registration is configured |
+| ✅ | GET | `/api/v1/profiles/me` | JWT | Any | Get my profile |
+| ✅ | PUT | `/api/v1/profiles/me` | JWT | Any | Update my profile |
+| ✅ | GET | `/api/v1/instructors/{id}` | Public | — | Get public instructor profile |
 
 ## Course Module
 
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| GET | `/api/v1/categories` | Public | — | List categories |
-| POST | `/api/v1/categories` | JWT | ADMIN | Create category |
-| PUT | `/api/v1/categories/{id}` | JWT | ADMIN | Update category |
-| DELETE | `/api/v1/categories/{id}` | JWT | ADMIN | Delete category |
-| GET | `/api/v1/courses` | Public | — | List/search courses |
-| GET | `/api/v1/courses/{idOrSlug}` | Public | — | Get course detail |
-| POST | `/api/v1/courses` | JWT | INST/ADMIN | Create course |
-| PUT | `/api/v1/courses/{id}` | JWT | Owner/ADMIN | Update course |
-| DELETE | `/api/v1/courses/{id}` | JWT | Owner/ADMIN | Soft delete course |
-| PATCH | `/api/v1/courses/{id}/publish` | JWT | Owner/ADMIN | Publish course |
-| PATCH | `/api/v1/courses/{id}/archive` | JWT | Owner/ADMIN | Archive course |
-| GET | `/api/v1/courses/{id}/sections` | Public | — | List sections |
-| POST | `/api/v1/courses/{id}/sections` | JWT | Owner/ADMIN | Create section |
-| POST | `/api/v1/sections/{id}/lessons` | JWT | Owner/ADMIN | Create lesson |
-| GET | `/api/v1/lessons/{id}` | JWT | Enrolled/Owner | Get lesson |
-| POST | `/api/v1/lessons/{id}/video/upload-url` | JWT | Owner/ADMIN | Get presigned upload URL |
+| Status | Method | Path | Auth | Role | Description |
+|--------|--------|------|------|------|-------------|
+| ✅ | GET | `/api/v1/categories` | Public | — | List active categories |
+| ✅ | POST | `/api/v1/categories` | JWT | ADMIN | Create category |
+| ✅ | PUT | `/api/v1/categories/{id}` | JWT | ADMIN | Update category |
+| ✅ | DELETE | `/api/v1/categories/{id}` | JWT | ADMIN | Deactivate category |
+| ✅ | GET | `/api/v1/courses` | Public | — | List/search published courses |
+| ✅ | GET | `/api/v1/courses/me` | JWT | INST/ADMIN | List my authored courses |
+| ✅ | GET | `/api/v1/courses/{idOrSlug}` | Public/JWT | —/Owner/Admin | Get published detail or own draft detail |
+| ✅ | POST | `/api/v1/courses` | JWT | INST/ADMIN | Create course |
+| ✅ | PUT | `/api/v1/courses/{id}` | JWT | Owner/ADMIN | Update course |
+| ✅ | DELETE | `/api/v1/courses/{id}` | JWT | Owner/ADMIN | Soft delete course |
+| ✅ | PATCH | `/api/v1/courses/{id}/publish` | JWT | Owner/ADMIN | Direct publish course |
+| ✅ | PATCH | `/api/v1/courses/{id}/archive` | JWT | Owner/ADMIN | Archive course |
+| ✅ | GET | `/api/v1/courses/{id}/sections` | Public/JWT | —/Owner/Admin | List public or owner-visible sections |
+| ✅ | POST | `/api/v1/courses/{id}/sections` | JWT | Owner/ADMIN | Create section |
+| ✅ | PUT | `/api/v1/sections/{id}` | JWT | Owner/ADMIN | Update section |
+| ✅ | DELETE | `/api/v1/sections/{id}` | JWT | Owner/ADMIN | Soft delete section and lessons |
+| ✅ | POST | `/api/v1/sections/{id}/lessons` | JWT | Owner/ADMIN | Create lesson |
+| ✅ | GET | `/api/v1/lessons/{id}` | Public/JWT | Preview/Owner/Admin | Get preview lesson or protected owner lesson |
+| ✅ | PUT | `/api/v1/lessons/{id}` | JWT | Owner/ADMIN | Update lesson |
+| ✅ | DELETE | `/api/v1/lessons/{id}` | JWT | Owner/ADMIN | Soft delete lesson |
+| ✅ | POST | `/api/v1/lessons/{id}/resources` | JWT | Owner/ADMIN | Create lesson resource |
+| ✅ | PUT | `/api/v1/lesson-resources/{id}` | JWT | Owner/ADMIN | Update lesson resource |
+| ✅ | DELETE | `/api/v1/lesson-resources/{id}` | JWT | Owner/ADMIN | Delete lesson resource |
+| ✅ | POST | `/api/v1/lessons/{id}/video/upload-url` | JWT | Owner/ADMIN | Create Bunny TUS upload ticket |
 
 ## Enrollment & Learning Module
 
