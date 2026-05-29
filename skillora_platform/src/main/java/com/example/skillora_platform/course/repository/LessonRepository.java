@@ -40,4 +40,16 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
             AND l.section.deletedAt IS NULL
             """)
     long sumActiveDurationSecondsByCourseId(@Param("courseId") Long courseId);
+
+    @Query("""
+            SELECT l FROM Lesson l
+            JOIN FETCH l.section s
+            WHERE s.course.id = :courseId
+            AND l.deletedAt IS NULL
+            AND l.published = true
+            AND s.deletedAt IS NULL
+            AND s.published = true
+            ORDER BY s.orderIndex ASC, l.orderIndex ASC
+            """)
+    List<Lesson> findPublishedLessonsByCourseId(@Param("courseId") Long courseId);
 }

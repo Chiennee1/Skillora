@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.skillora_platform.common.SlugUtils;
+import com.example.skillora_platform.enrollment.service.LearningAccessService;
 import com.example.skillora_platform.course.dto.LessonCreateRequest;
 import com.example.skillora_platform.course.dto.LessonResourceCreateRequest;
 import com.example.skillora_platform.course.dto.LessonResourceResponse;
@@ -38,6 +39,7 @@ public class LessonService {
     private final SectionService sectionService;
     private final CoursePermissionService permissionService;
     private final CourseTotalsService courseTotalsService;
+    private final LearningAccessService learningAccessService;
     private final LessonRepository lessonRepository;
     private final LessonResourceRepository lessonResourceRepository;
 
@@ -78,8 +80,18 @@ public class LessonService {
         }
 
         User actor = permissionService.requireActor(actorEmail);
-        permissionService.requireOwnerOrAdmin(course, actor);
-        return toResponse(lesson, true);
+
+        // Owner or Admin can always view
+        if (permissionService.canManage(course, actor)) {
+            return toResponse(lesson, true);
+        }
+
+        // Enrolled students can view all published lessons
+        if (learningAccessService.hasActiveEnrollment(actor.getId(), course.getId())) {
+            return toResponse(lesson, true);
+        }
+
+        throw new BusinessException("Enrollment required to access this lesson", HttpStatus.FORBIDDEN);
     }
 
     @Transactional
