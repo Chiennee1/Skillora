@@ -13,6 +13,9 @@ public final class Constants {
     public static final String LESSON_RESOURCE_API_PREFIX = API_V1_PREFIX + "/lesson-resources";
     public static final String ENROLLMENT_API_PREFIX = API_V1_PREFIX + "/enrollments";
     public static final String LEARNING_API_PREFIX = API_V1_PREFIX + "/learning";
+    public static final String QUIZ_API_PREFIX = API_V1_PREFIX + "/quizzes";
+    public static final String ASSIGNMENT_API_PREFIX = API_V1_PREFIX + "/assignments";
+    public static final String SUBMISSION_API_PREFIX = API_V1_PREFIX + "/submissions";
 
     public static final int DEFAULT_PAGE_SIZE = 20;
     public static final int MAX_PAGE_SIZE = 100;
