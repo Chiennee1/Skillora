@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/Skillora.iml" filepath="$PROJECT_DIR$/.idea/Skillora.iml" />
+      <module fileurl="file://$PROJECT_DIR$/skillora_platform/skillora_platform.iml" filepath="$PROJECT_DIR$/skillora_platform/skillora_platform.iml" />
     </modules>
   </component>
 </project>

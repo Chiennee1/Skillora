@@ -65,6 +65,17 @@
 - **Video upload**: Backend creates Bunny Stream videos and returns TUS upload headers/signature; API keys are never returned to clients.
 - **Slugging**: Category/course/lesson slugs are generated through `SlugUtils`, including Vietnamese diacritic normalization and numeric suffixes for uniqueness.
 
+### AD-012: Phase 3 Enrollment + Progress Model (2026-05-28)
+- **Decision**: Free courses are directly enrollable via `POST /api/v1/courses/{id}/enroll`; paid courses require the Commerce module checkout flow (returns HTTP 402).
+- **Reason**: Separates free enrollment from paid enrollment; Commerce module will call EnrollmentService programmatically after payment confirmation.
+- **Implementation**:
+  - Enrollment: `ACTIVE → COMPLETED → REFUNDED/CANCELLED` lifecycle; UNIQUE(user_id, course_id) prevents duplicates.
+  - Progress tracking: Each lesson gets a `LessonProgress` record; lesson is auto-completed when `watchedSeconds >= 90% of durationSeconds` or explicitly marked completed.
+  - Auto-completion: When all published lessons in active sections are completed, enrollment status transitions to `COMPLETED` and a `CourseCertificate` is auto-generated with a UUID-based code.
+  - Enrolled student access: `LearningAccessService` is integrated into `LessonService.get()` to allow students with ACTIVE/COMPLETED enrollments to view non-preview lessons (resolves TD-020).
+  - Dashboard: `GET /api/v1/learning/dashboard` aggregates total enrolled, in-progress, completed counts and recent enrollments.
+  - Enrollment entity does not extend `BaseEntity` because the schema uses `enrolled_at` instead of `created_at`; `CourseCertificate` uses `issued_at`.
+
 ## Lessons Learned
 
 ### LL-001: Spring MVC Path Variables Need Explicit Names Without `-parameters` (2026-05-28)

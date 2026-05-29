@@ -1,6 +1,6 @@
 # Context: Project Overview
 
-> Snapshot of Skillora project state. Updated: 2026-05-28.
+> Snapshot of Skillora project state. Updated: 2026-05-28 (Phase 3).
 
 ## Project Summary
 
@@ -12,8 +12,8 @@
 | Architecture | Layered (Controller → Service → Repository → Entity) |
 | API Base | `/api/v1` |
 | Planned Modules | 10 (user, course, enrollment, quiz, assignment, commerce, review, chat, notification, admin) |
-| Java Files | 115 |
-| Test Suites | 7 |
+| Java Files | 130+ |
+| Test Suites | 8 |
 | DB Tables | 30+ (full schema designed, seed data ready) |
 
 ## Completion Status
@@ -23,7 +23,7 @@
 | Foundation/Core Config | ✅ Complete | 100% |
 | User + Auth + JWT + OAuth2 | ✅ Complete | 100% |
 | Course Catalog + Content | ✅ Complete | 100% |
-| Enrollment + Progress | ❌ Not started | 0% |
+| Enrollment + Progress | ✅ Complete | 100% |
 | Quiz Engine | ❌ Not started | 0% |
 | Assignment + Grading | ❌ Not started | 0% |
 | Commerce (Cart + Payment) | ❌ Not started | 0% |
@@ -42,6 +42,7 @@
 | Core foundation | ✅ Complete | `common`, `exception`, `config` packages with tests |
 | User/Auth module | ✅ Complete | Register/login/refresh/logout/reset/profile/instructor/OAuth2 callback with integration tests |
 | Course module | ✅ Complete | Categories, courses, sections, lessons, resources, ownership, Bunny TUS upload ticket |
+| Enrollment module | ✅ Complete | Free enrollment, progress tracking, auto-completion, certificates, enrolled student lesson access, learning dashboard |
 | Maven dependencies | ✅ Configured | Web, Security, OAuth2 Resource Server, JPA, Validation, Actuator, SpringDoc, MySQL, H2, Lombok |
 | Agent framework | ✅ Configured | `.agent/` directory with rules, skills, context |
 

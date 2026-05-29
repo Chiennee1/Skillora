@@ -58,14 +58,14 @@
 
 ## Enrollment & Learning Module
 
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| POST | `/api/v1/courses/{id}/enroll` | JWT | STUDENT | Enroll in free course |
-| GET | `/api/v1/enrollments/me` | JWT | STUDENT | My enrollments |
-| GET | `/api/v1/enrollments/{id}/progress` | JWT | Owner | Lesson progress |
-| PATCH | `/api/v1/enrollments/{id}/lessons/{lid}/progress` | JWT | Owner | Update progress |
-| GET | `/api/v1/enrollments/{id}/certificate` | JWT | Owner | Get certificate |
-| GET | `/api/v1/learning/dashboard` | JWT | STUDENT | Dashboard |
+| Status | Method | Path | Auth | Role | Description |
+|--------|--------|------|------|------|-------------|
+| ✅ | POST | `/api/v1/courses/{id}/enroll` | JWT | STUDENT | Enroll in free course |
+| ✅ | GET | `/api/v1/enrollments/me` | JWT | Any | My enrollments (filterable by status) |
+| ✅ | GET | `/api/v1/enrollments/{id}/progress` | JWT | Owner | Lesson progress list |
+| ✅ | PATCH | `/api/v1/enrollments/{id}/lessons/{lid}/progress` | JWT | Owner | Update lesson progress |
+| ✅ | GET | `/api/v1/enrollments/{id}/certificate` | JWT | Owner | Get course certificate |
+| ✅ | GET | `/api/v1/learning/dashboard` | JWT | Any | Learning dashboard stats |
 
 ## Quiz Module
 

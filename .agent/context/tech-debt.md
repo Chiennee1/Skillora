@@ -1,6 +1,6 @@
 # Context: Tech Debt
 
-> Known technical debt items for Skillora. Updated: 2026-05-28.
+> Known technical debt items for Skillora. Updated: 2026-05-28 (Phase 3).
 
 ## Completed Setup (Foundation phase)
 
@@ -15,6 +15,8 @@
 | TD-007 | Add Swagger/SpringDoc OpenAPI | config | ✅ Done 2026-05-27 |
 | TD-014 | Implement User/Auth/JWT/OAuth2 Phase 1 APIs | user | ✅ Done 2026-05-28 |
 | TD-017 | Implement Course Catalog + Content Phase 2 APIs | course | ✅ Done 2026-05-28 |
+| TD-020 | Enrolled-student lesson access — resolved via LearningAccessService | enrollment | ✅ Done 2026-05-28 |
+| TD-021 | Implement Enrollment + Progress Phase 3 APIs | enrollment | ✅ Done 2026-05-28 |
 
 ## Architecture Debt (track during development)
 
@@ -30,4 +32,3 @@
 | TD-016 | OAuth2 callback returns tokens in redirect URL; prefer one-time-code exchange later | user | 3 hours |
 | TD-018 | Bunny Stream webhook/status sync not implemented | course | 3 hours |
 | TD-019 | Redis cache annotations/config for public course catalog not implemented yet | course | 2 hours |
-| TD-020 | Enrolled-student lesson access deferred until Enrollment module | course/enrollment | Phase 3 |
