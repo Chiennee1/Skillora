@@ -76,6 +76,27 @@
   - Dashboard: `GET /api/v1/learning/dashboard` aggregates total enrolled, in-progress, completed counts and recent enrollments.
   - Enrollment entity does not extend `BaseEntity` because the schema uses `enrolled_at` instead of `created_at`; `CourseCertificate` uses `issued_at`.
 
+### AD-013: Phase 4 Nested Quiz and One-Step Submission Model (2026-05-29)
+- **Decision**: Implement quiz management with nested quiz/question/answer payloads and one-step quiz submission.
+- **Reason**: Keeps Phase 4 API compact and aligned with the existing API catalog while supporting full quiz authoring and auto-grading.
+- **Implementation**:
+  - Instructors/admins create and replace quiz content through `POST/PUT /api/v1/quizzes`.
+  - Students submit through `POST /api/v1/quizzes/{id}/submit`; the service creates a submitted attempt immediately.
+  - Auto-grading supports `SINGLE`, `MULTIPLE`, `TRUE_FALSE`, and exact-match `TEXT` questions.
+  - Student quiz reads hide correct answer flags; course owners/admins can view answer correctness.
+  - Passing a quiz marks the associated quiz lesson complete through `LearningProgressService` when the enrollment is still active.
+  - `time_limit_mins` is stored for future timed-attempt UX but is not strictly enforced without a dedicated start-attempt endpoint.
+
+### AD-014: Phase 5 Assignment Submission and Instructor Grading Model (2026-05-29)
+- **Decision**: Implement one-assignment-per-lesson authoring, one-submission-per-enrollment, and instructor/admin grading through `SUBMITTED`, `RETURNED`, and `GRADED` states.
+- **Reason**: Matches the existing schema uniqueness rules while keeping assignment workflow simple for students and instructors.
+- **Implementation**:
+  - Assignments attach only to `ASSIGNMENT` lessons and are managed by course owners/admins.
+  - Students can submit only with an active/completed enrollment; late submissions are accepted and surfaced with `dueAt`/`late`.
+  - Resubmission is allowed only after `RETURNED`, reusing the same submission row.
+  - `GRADED` submissions mark the assignment lesson complete through `LearningProgressService` when the enrollment is still active.
+  - File submissions are URL-based for this phase; managed upload/scanning is deferred.
+
 ## Lessons Learned
 
 ### LL-001: Spring MVC Path Variables Need Explicit Names Without `-parameters` (2026-05-28)

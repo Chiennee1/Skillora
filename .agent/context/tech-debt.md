@@ -1,6 +1,6 @@
 # Context: Tech Debt
 
-> Known technical debt items for Skillora. Updated: 2026-05-28 (Phase 3).
+> Known technical debt items for Skillora. Updated: 2026-05-29 (Phase 5).
 
 ## Completed Setup (Foundation phase)
 
@@ -17,6 +17,8 @@
 | TD-017 | Implement Course Catalog + Content Phase 2 APIs | course | ✅ Done 2026-05-28 |
 | TD-020 | Enrolled-student lesson access — resolved via LearningAccessService | enrollment | ✅ Done 2026-05-28 |
 | TD-021 | Implement Enrollment + Progress Phase 3 APIs | enrollment | ✅ Done 2026-05-28 |
+| TD-022 | Implement Quiz Engine Phase 4 APIs | quiz | Done 2026-05-29 |
+| TD-024 | Implement Assignment + Grading Phase 5 APIs | assignment | Done 2026-05-29 |
 
 ## Architecture Debt (track during development)
 
@@ -32,3 +34,6 @@
 | TD-016 | OAuth2 callback returns tokens in redirect URL; prefer one-time-code exchange later | user | 3 hours |
 | TD-018 | Bunny Stream webhook/status sync not implemented | course | 3 hours |
 | TD-019 | Redis cache annotations/config for public course catalog not implemented yet | course | 2 hours |
+| TD-023 | Quiz `timeLimitMins` is stored but not strictly enforced without a start-attempt endpoint | quiz | 2 hours |
+| TD-025 | Assignment submissions store file URLs only; no managed upload or malware scanning yet | assignment | 2 hours |
+| TD-026 | Assignment graded/returned notifications are deferred until the notification module | assignment | 2 hours |

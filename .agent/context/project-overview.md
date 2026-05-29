@@ -1,6 +1,6 @@
 # Context: Project Overview
 
-> Snapshot of Skillora project state. Updated: 2026-05-28 (Phase 3).
+> Snapshot of Skillora project state. Updated: 2026-05-29 (Phase 5).
 
 ## Project Summary
 
@@ -12,8 +12,8 @@
 | Architecture | Layered (Controller → Service → Repository → Entity) |
 | API Base | `/api/v1` |
 | Planned Modules | 10 (user, course, enrollment, quiz, assignment, commerce, review, chat, notification, admin) |
-| Java Files | 130+ |
-| Test Suites | 8 |
+| Java Files | 175+ |
+| Test Suites | 10 |
 | DB Tables | 30+ (full schema designed, seed data ready) |
 
 ## Completion Status
@@ -24,8 +24,8 @@
 | User + Auth + JWT + OAuth2 | ✅ Complete | 100% |
 | Course Catalog + Content | ✅ Complete | 100% |
 | Enrollment + Progress | ✅ Complete | 100% |
-| Quiz Engine | ❌ Not started | 0% |
-| Assignment + Grading | ❌ Not started | 0% |
+| Quiz Engine | Complete | 100% |
+| Assignment + Grading | Complete | 100% |
 | Commerce (Cart + Payment) | ❌ Not started | 0% |
 | Review/Rating | ❌ Not started | 0% |
 | AI Chatbot (Gemini) | ❌ Not started | 0% |
@@ -43,6 +43,8 @@
 | User/Auth module | ✅ Complete | Register/login/refresh/logout/reset/profile/instructor/OAuth2 callback with integration tests |
 | Course module | ✅ Complete | Categories, courses, sections, lessons, resources, ownership, Bunny TUS upload ticket |
 | Enrollment module | ✅ Complete | Free enrollment, progress tracking, auto-completion, certificates, enrolled student lesson access, learning dashboard |
+| Quiz module | Complete | Nested quiz authoring, question/answer validation, enrolled access, one-step submission, auto-grading, attempts |
+| Assignment module | Complete | Assignment authoring, enrolled submission, returned resubmission, instructor/admin grading, progress completion |
 | Maven dependencies | ✅ Configured | Web, Security, OAuth2 Resource Server, JPA, Validation, Actuator, SpringDoc, MySQL, H2, Lombok |
 | Agent framework | ✅ Configured | `.agent/` directory with rules, skills, context |
 

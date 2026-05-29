@@ -1,6 +1,6 @@
 # Context: API Catalog
 
-> Planned API endpoint catalog for Skillora. Updated: 2026-05-28.
+> Planned API endpoint catalog for Skillora. Updated: 2026-05-29.
 > Status: 🔲 = Planned, ✅ = Implemented
 
 ## Foundation Endpoints
@@ -69,23 +69,23 @@
 
 ## Quiz Module
 
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| POST | `/api/v1/quizzes` | JWT | INST/ADMIN | Create quiz |
-| GET | `/api/v1/quizzes/{id}` | JWT | Enrolled/Owner | Get quiz |
-| PUT | `/api/v1/quizzes/{id}` | JWT | INST/ADMIN | Update quiz |
-| POST | `/api/v1/quizzes/{id}/submit` | JWT | STUDENT | Submit quiz |
-| GET | `/api/v1/quizzes/{id}/attempts` | JWT | STUDENT | My attempts |
+| Status | Method | Path | Auth | Role | Description |
+|--------|--------|------|------|------|-------------|
+| Complete | POST | `/api/v1/quizzes` | JWT | INST/ADMIN | Create quiz with nested questions/options |
+| Complete | GET | `/api/v1/quizzes/{id}` | JWT | Enrolled/Owner | Get quiz; student response hides correct flags |
+| Complete | PUT | `/api/v1/quizzes/{id}` | JWT | Owner/ADMIN | Replace quiz with nested questions/options |
+| Complete | POST | `/api/v1/quizzes/{id}/submit` | JWT | STUDENT | Submit quiz and auto-grade |
+| Complete | GET | `/api/v1/quizzes/{id}/attempts` | JWT | STUDENT | My attempts |
 
 ## Assignment Module
 
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| POST | `/api/v1/assignments` | JWT | INST/ADMIN | Create assignment |
-| GET | `/api/v1/assignments/{id}` | JWT | Enrolled/Owner | Get assignment |
-| POST | `/api/v1/assignments/{id}/submit` | JWT | STUDENT | Submit |
-| GET | `/api/v1/assignments/{id}/submissions` | JWT | INST/ADMIN | List submissions |
-| PATCH | `/api/v1/submissions/{id}/grade` | JWT | INST/ADMIN | Grade |
+| Status | Method | Path | Auth | Role | Description |
+|--------|--------|------|------|------|-------------|
+| Complete | POST | `/api/v1/assignments` | JWT | INST/ADMIN | Create assignment |
+| Complete | GET | `/api/v1/assignments/{id}` | JWT | Enrolled/Owner | Get assignment |
+| Complete | POST | `/api/v1/assignments/{id}/submit` | JWT | STUDENT | Submit or resubmit after return |
+| Complete | GET | `/api/v1/assignments/{id}/submissions` | JWT | INST/ADMIN | List submissions |
+| Complete | PATCH | `/api/v1/submissions/{id}/grade` | JWT | INST/ADMIN | Grade or return |
 
 ## Commerce Module
 

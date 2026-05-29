@@ -151,7 +151,7 @@ class EnrollmentIntegrationTest {
         // Instructor cannot enroll in own course
         mockMvc.perform(post("/api/v1/courses/{id}/enroll", freeCourseId)
                         .header("Authorization", bearer(instructorToken)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -352,6 +352,8 @@ class EnrollmentIntegrationTest {
     private Long createLesson(
             Long sectionId, String title, String type, int durationSeconds, boolean preview, String accessToken
     ) throws Exception {
+        int orderIndex = lessonRepository.findBySectionIdAndDeletedAtIsNullOrderByOrderIndexAscIdAsc(sectionId)
+                .size();
         JsonNode response = postJson("/api/v1/sections/%d/lessons".formatted(sectionId), """
                 {
                     "title": "%s",
@@ -362,7 +364,7 @@ class EnrollmentIntegrationTest {
                     "published": true,
                     "orderIndex": %d
                 }
-                """.formatted(title, type, durationSeconds, preview, preview ? 0 : 1), accessToken, status().isCreated());
+                """.formatted(title, type, durationSeconds, preview, orderIndex), accessToken, status().isCreated());
         return response.at("/data/id").asLong();
     }
 
