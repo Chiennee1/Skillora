@@ -97,6 +97,29 @@
   - `GRADED` submissions mark the assignment lesson complete through `LearningProgressService` when the enrollment is still active.
   - File submissions are URL-based for this phase; managed upload/scanning is deferred.
 
+### AD-015: Phase 6 Review/Rating and Course Stats Model (2026-05-29)
+- **Decision**: Implement course reviews with 1-review-per-enrollment, like/unlike, and soft-delete; update `courses.avg_rating/total_reviews` directly.
+- **Reason**: Keeps Phase 6 self-contained while maintaining data consistency in the `courses` table that `v_course_detail` already reads from.
+- **Implementation**:
+  - Only students with `ACTIVE` or `COMPLETED` enrollment can create a review; `UNIQUE(enrollment_id)` prevents duplicates.
+  - Review delete is soft (`status = DELETED`); only the owner or an admin can delete. `DELETED` reviews are excluded from public listing and rating calculations.
+  - Each review create/update/delete triggers `CourseRatingService.refreshCourseRating()` which recalculates `courses.avg_rating` and `courses.total_reviews` from published reviews.
+  - `course_stats` table is deferred to the Admin module (tracked as TD-028); Phase 6 writes only to the `courses` table.
+  - Like/unlike are idempotent; composite PK `(user_id, review_id)` prevents duplicate likes.
+  - `GET /api/v1/reviews?courseId=X` is public; authenticated users receive a `likedByMe` flag in the response.
+  - Review update only allows changing `rating` and `content`; the `courseId` and `enrollmentId` are immutable.
+
+### AD-016: Phase 7 Commerce Core Without External Payment Gateway (2026-05-30)
+- **Decision**: Implement Wishlist, Cart, Coupon validation, and Orders without VNPay/MoMo gateway callbacks in Phase 7.
+- **Reason**: Enables the purchase workflow data model while keeping gateway signing/IPN complexity isolated for a later payment phase.
+- **Implementation**:
+  - Wishlist/cart items are student-only, idempotent, and only accept published, non-deleted courses.
+  - Coupon validation always calculates against the authenticated student's current cart; client-provided totals are not trusted.
+  - Checkout creates `PENDING` orders for paid totals and does not create enrollments until a later payment confirmation flow.
+  - Checkout with `totalAmount = 0` is marked `PAID`, uses `paymentGateway = FREE`, clears the cart, creates enrollments, and increments course enrollment counts.
+  - Coupon `usedCount` increments only for auto-paid zero-total orders; pending paid orders do not consume coupon usage.
+  - `PaymentTransaction`, VNPay/MoMo return, and IPN handling are deferred to the dedicated payment gateway phase.
+
 ## Lessons Learned
 
 ### LL-001: Spring MVC Path Variables Need Explicit Names Without `-parameters` (2026-05-28)

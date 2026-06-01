@@ -1,6 +1,6 @@
 # Context: API Catalog
 
-> Planned API endpoint catalog for Skillora. Updated: 2026-05-29.
+> Planned API endpoint catalog for Skillora. Updated: 2026-05-30.
 > Status: 🔲 = Planned, ✅ = Implemented
 
 ## Foundation Endpoints
@@ -89,32 +89,34 @@
 
 ## Commerce Module
 
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| GET | `/api/v1/wishlist` | JWT | STUDENT | Get wishlist |
-| POST | `/api/v1/wishlist/{courseId}` | JWT | STUDENT | Add to wishlist |
-| DELETE | `/api/v1/wishlist/{courseId}` | JWT | STUDENT | Remove |
-| GET | `/api/v1/cart` | JWT | STUDENT | Get cart |
-| POST | `/api/v1/cart/{courseId}` | JWT | STUDENT | Add to cart |
-| DELETE | `/api/v1/cart/{courseId}` | JWT | STUDENT | Remove |
-| POST | `/api/v1/orders/checkout` | JWT | STUDENT | Checkout |
-| GET | `/api/v1/orders/me` | JWT | STUDENT | My orders |
-| POST | `/api/v1/payments/vnpay/create` | JWT | STUDENT | Create VNPay payment |
-| GET | `/api/v1/payments/vnpay/return` | Public | — | VNPay return |
-| POST | `/api/v1/payments/vnpay/ipn` | Public | — | VNPay IPN |
-| POST | `/api/v1/payments/momo/ipn` | Public | — | MoMo IPN |
-| POST | `/api/v1/coupons/validate` | JWT | STUDENT | Validate coupon |
+| Status | Method | Path | Auth | Role | Description |
+|--------|--------|------|------|------|-------------|
+| Complete | GET | `/api/v1/wishlist` | JWT | STUDENT | Get wishlist |
+| Complete | POST | `/api/v1/wishlist/{courseId}` | JWT | STUDENT | Add to wishlist |
+| Complete | DELETE | `/api/v1/wishlist/{courseId}` | JWT | STUDENT | Remove |
+| Complete | GET | `/api/v1/cart` | JWT | STUDENT | Get cart |
+| Complete | POST | `/api/v1/cart/{courseId}` | JWT | STUDENT | Add to cart |
+| Complete | DELETE | `/api/v1/cart/{courseId}` | JWT | STUDENT | Remove |
+| Complete | POST | `/api/v1/orders/checkout` | JWT | STUDENT | Create order from cart; zero-total orders auto-enroll |
+| Complete | GET | `/api/v1/orders/me` | JWT | STUDENT | My orders |
+| Complete | GET | `/api/v1/orders/{id}` | JWT | STUDENT | Get order detail (owner only) |
+| Complete | PATCH | `/api/v1/orders/{id}/cancel` | JWT | STUDENT | Cancel pending order (owner only) |
+| Planned | POST | `/api/v1/payments/vnpay/create` | JWT | STUDENT | Create VNPay payment |
+| Planned | GET | `/api/v1/payments/vnpay/return` | Public | — | VNPay return |
+| Planned | POST | `/api/v1/payments/vnpay/ipn` | Public | — | VNPay IPN |
+| Planned | POST | `/api/v1/payments/momo/ipn` | Public | — | MoMo IPN |
+| Complete | POST | `/api/v1/coupons/validate` | JWT | STUDENT | Validate coupon against current cart |
 
 ## Review Module
 
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| GET | `/api/v1/reviews?courseId=X` | Public | — | List reviews |
-| POST | `/api/v1/reviews` | JWT | STUDENT | Create review |
-| PUT | `/api/v1/reviews/{id}` | JWT | Owner | Update |
-| DELETE | `/api/v1/reviews/{id}` | JWT | Owner/ADMIN | Delete |
-| POST | `/api/v1/reviews/{id}/like` | JWT | STUDENT | Like |
-| DELETE | `/api/v1/reviews/{id}/like` | JWT | STUDENT | Unlike |
+| Status | Method | Path | Auth | Role | Description |
+|--------|--------|------|------|------|-------------|
+| ✅ | GET | `/api/v1/reviews?courseId=X` | Public | — | List published reviews (paginated, likedByMe for auth users) |
+| ✅ | POST | `/api/v1/reviews` | JWT | STUDENT | Create review (requires active enrollment, 1 per enrollment) |
+| ✅ | PUT | `/api/v1/reviews/{id}` | JWT | Owner | Update own review (rating + content) |
+| ✅ | DELETE | `/api/v1/reviews/{id}` | JWT | Owner/ADMIN | Soft-delete review (status → DELETED) |
+| ✅ | POST | `/api/v1/reviews/{id}/like` | JWT | Any | Like review (idempotent) |
+| ✅ | DELETE | `/api/v1/reviews/{id}/like` | JWT | Any | Unlike review (idempotent) |
 
 ## Chat Module
 
