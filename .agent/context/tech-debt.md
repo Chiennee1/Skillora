@@ -1,6 +1,6 @@
 # Context: Tech Debt
 
-> Known technical debt items for Skillora. Updated: 2026-05-30 (Phase 7).
+> Known technical debt items for Skillora. Updated: 2026-06-01 (Phase 9).
 
 ## Completed Setup (Foundation phase)
 
@@ -19,8 +19,11 @@
 | TD-021 | Implement Enrollment + Progress Phase 3 APIs | enrollment | ✅ Done 2026-05-28 |
 | TD-022 | Implement Quiz Engine Phase 4 APIs | quiz | Done 2026-05-29 |
 | TD-024 | Implement Assignment + Grading Phase 5 APIs | assignment | Done 2026-05-29 |
+| TD-026 | Assignment graded/returned notifications | assignment/notification | Done 2026-06-01 |
 | TD-027 | Implement Review/Rating Phase 6 APIs | review | ✅ Done 2026-05-29 |
+| TD-030 | Review create/delete notifications to course instructor | review/notification | Done 2026-06-01 |
 | TD-031 | Implement Commerce Core Phase 7 APIs (incl. PaymentTransaction entity, getOrderById, cancelOrder) | commerce | ✅ Done 2026-05-30 |
+| TD-040 | Implement Phase 9 AI Chatbot + Notifications APIs and tests | chat/notification | Done 2026-06-01 |
 
 ## Architecture Debt (track during development)
 
@@ -38,11 +41,13 @@
 | TD-019 | Redis cache annotations/config for public course catalog not implemented yet | course | 2 hours |
 | TD-023 | Quiz `timeLimitMins` is stored but not strictly enforced without a start-attempt endpoint | quiz | 2 hours |
 | TD-025 | Assignment submissions store file URLs only; no managed upload or malware scanning yet | assignment | 2 hours |
-| TD-026 | Assignment graded/returned notifications are deferred until the notification module | assignment | 2 hours |
 | TD-028 | `course_stats` table is not populated in Phase 6; review stats write directly to `courses` table. Full `course_stats` sync deferred to Admin module | review/admin | 3 hours |
 | TD-029 | Review list `likeCount`/`likedByMe` uses per-review queries; consider batch query or `@Formula` for N+1 optimization at scale | review | 2 hours |
-| TD-030 | Review create/delete notifications to course instructor are deferred until the notification module | review | 1 hour |
 | TD-032 | VNPay/MoMo payment URL creation, signature verification, return, and IPN handling are deferred | commerce | 5 hours |
 | TD-033 | Pending order expiration scheduled cleanup not implemented; manual cancel API available via `PATCH /orders/{id}/cancel` | commerce | 1 hour |
 | TD-034 | Admin coupon CRUD, coupon audit trail, and per-user coupon usage limits are deferred | commerce/admin | 3 hours |
-
+| TD-035 | Notification SSE fanout is in-memory and single-instance only; Redis pub/sub or broker-backed fanout is needed for horizontal scaling | notification | 3 hours |
+| TD-036 | Gemini chat does not stream partial responses; API waits for a complete `generateContent` response | chat | 2 hours |
+| TD-037 | Gemini integration has no rate limiter, circuit breaker, retry, or usage quota dashboard | chat/common | 4 hours |
+| TD-038 | Payment notification events are placeholders until VNPay/MoMo Phase 8 publishes gateway success/failure events | commerce/notification | 2 hours |
+| TD-039 | Chat content is stored as plain text and relies on frontend escaping; add HTML sanitization policy before rendering rich text | chat/security | 2 hours |

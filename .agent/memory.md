@@ -33,7 +33,7 @@
 ### AD-006: AI Chatbot with Gemini (2026-05)
 - **Decision**: Use Google Gemini 2.5 Flash via AI Studio API key
 - **Reason**: Free tier generous (1,500 RPD, 1M TPM), fast response, supports Vietnamese
-- **Implementation**: REST API calls with Spring WebClient, conversation history stored in DB
+- **Implementation**: REST API calls with Spring `RestClient`, conversation history stored in DB
 
 ### AD-007: Redis Cache Strategy (2026-05)
 - **Decision**: Cache published courses list + popular course details, TTL 5 minutes
@@ -119,6 +119,22 @@
   - Checkout with `totalAmount = 0` is marked `PAID`, uses `paymentGateway = FREE`, clears the cart, creates enrollments, and increments course enrollment counts.
   - Coupon `usedCount` increments only for auto-paid zero-total orders; pending paid orders do not consume coupon usage.
   - `PaymentTransaction`, VNPay/MoMo return, and IPN handling are deferred to the dedicated payment gateway phase.
+
+### AD-017: Phase 9 Gemini Chat and Event-Driven Notifications (2026-06-01)
+- **Decision**: Implement AI chat with DB-backed conversation history and notifications with REST + SSE delivery.
+- **Reason**: Keeps chat and notification modules aligned with the existing layered architecture while allowing future realtime scale-out.
+- **Implementation**:
+  - Chat uses `RestClient` through a `GeminiClient` interface, default model `gemini-2.5-flash`, and env-driven `skillora.ai.gemini.*` config.
+  - Local secrets are read from ignored `.env.local`; `.env.example` documents required variables without secrets.
+  - Chat loads actor/context/history in a read-only transaction, calls Gemini outside the DB transaction, then opens a short write transaction to persist messages.
+  - Chat stores `chat_conversations` and `chat_messages`; user/assistant messages are persisted only after Gemini returns a successful response.
+  - Existing conversation course context is revalidated on every ask, including archived/deleted courses and owner/admin/enrollment access.
+  - Gemini response parsing concatenates all text parts in `candidates[0].content.parts`.
+  - Course chat context exposes protected lesson content only to course owners/admins or enrolled students; public users get published course metadata only.
+  - Notifications store rows in `notifications`, expose list/read/read-all APIs, return structured JSON `data`, and stream new notifications over in-memory `SseEmitter` connections.
+  - Domain modules publish lightweight events; notification listeners use `@TransactionalEventListener(AFTER_COMMIT)` plus `REQUIRES_NEW` notification writes so notifications are not created for rolled-back transactions.
+  - SSE delivery is triggered by `NotificationCreatedEvent` after the notification row commits.
+  - Verification: `mvn.cmd test-compile`, Phase 9 targeted integration tests, and full `mvn.cmd test` passed on 2026-06-01.
 
 ## Lessons Learned
 

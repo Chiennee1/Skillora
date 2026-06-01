@@ -1,7 +1,8 @@
 # Context: API Catalog
 
-> Planned API endpoint catalog for Skillora. Updated: 2026-05-30.
+> Planned API endpoint catalog for Skillora. Updated: 2026-06-01.
 > Status: 🔲 = Planned, ✅ = Implemented
+> Verification: Phase 9 chat/notification APIs passed targeted integration tests and full `mvn.cmd test` on 2026-06-01.
 
 ## Foundation Endpoints
 
@@ -120,19 +121,20 @@
 
 ## Chat Module
 
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| POST | `/api/v1/chat/ask` | JWT | Any | Send message to AI |
-| GET | `/api/v1/chat/conversations` | JWT | Owner | List conversations |
-| GET | `/api/v1/chat/conversations/{id}/messages` | JWT | Owner | Get messages |
+| Status | Method | Path | Auth | Role | Description |
+|--------|--------|------|------|------|-------------|
+| Complete | POST | `/api/v1/chat/ask` | JWT | Any | Send message to Gemini AI, revalidate course context, and persist messages only after provider success |
+| Complete | GET | `/api/v1/chat/conversations` | JWT | Owner | List my conversations |
+| Complete | GET | `/api/v1/chat/conversations/{id}/messages` | JWT | Owner | Get my conversation messages |
 
 ## Notification Module
 
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| GET | `/api/v1/notifications` | JWT | Owner | List notifications |
-| PATCH | `/api/v1/notifications/{id}/read` | JWT | Owner | Mark as read |
-| PATCH | `/api/v1/notifications/read-all` | JWT | Owner | Mark all read |
+| Status | Method | Path | Auth | Role | Description |
+|--------|--------|------|------|------|-------------|
+| Complete | GET | `/api/v1/notifications` | JWT | Owner | List notifications, optional `unreadOnly`; `data` is structured JSON |
+| Complete | PATCH | `/api/v1/notifications/{id}/read` | JWT | Owner | Mark as read |
+| Complete | PATCH | `/api/v1/notifications/read-all` | JWT | Owner | Mark all read |
+| Complete | GET | `/api/v1/notifications/stream` | JWT | Owner | SSE stream for new notifications after DB commit |
 
 ## Admin Module
 
