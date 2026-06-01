@@ -16,6 +16,11 @@ public final class Constants {
     public static final String QUIZ_API_PREFIX = API_V1_PREFIX + "/quizzes";
     public static final String ASSIGNMENT_API_PREFIX = API_V1_PREFIX + "/assignments";
     public static final String SUBMISSION_API_PREFIX = API_V1_PREFIX + "/submissions";
+    public static final String REVIEW_API_PREFIX = API_V1_PREFIX + "/reviews";
+    public static final String WISHLIST_API_PREFIX = API_V1_PREFIX + "/wishlist";
+    public static final String CART_API_PREFIX = API_V1_PREFIX + "/cart";
+    public static final String COUPON_API_PREFIX = API_V1_PREFIX + "/coupons";
+    public static final String ORDER_API_PREFIX = API_V1_PREFIX + "/orders";
 
     public static final int DEFAULT_PAGE_SIZE = 20;
     public static final int MAX_PAGE_SIZE = 100;

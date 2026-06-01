@@ -83,6 +83,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, Constants.COURSE_API_PREFIX).permitAll()
                         .requestMatchers(HttpMethod.GET, Constants.COURSE_API_PREFIX + "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, Constants.LESSON_API_PREFIX + "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, Constants.REVIEW_API_PREFIX).permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
