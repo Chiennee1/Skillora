@@ -176,3 +176,17 @@
 - Token authentication for video URLs (prevent link sharing)
 - Store `videoId` in `lesson_videos.asset_id` column
 - Current Phase 2 flow returns TUS headers: `AuthorizationSignature`, `AuthorizationExpire`, `VideoId`, and `LibraryId`.
+
+### AD-018: Admin Dashboard + Audit Module
+- **Date**: 2026-06-01
+- **Decision**: Admin module is a cross-cutting module aggregating data from user, course, enrollment, commerce, and review modules
+- **Details**:
+  - Dashboard stats are computed on-demand via repository queries (no materialized view)
+  - Course approval workflow: supports REVIEWING/DRAFT → PUBLISHED/REJECTED via admin action
+  - Audit logging captures ALL admin write operations (status changes, coupon CRUD, course approval/rejection)
+  - `course_stats` table populated on-demand via `CourseStatsService.refreshStats(courseId)`
+  - Event-driven stats sync deferred to future iteration
+  - All admin endpoints protected via `@PreAuthorize("hasRole('ADMIN')")` at controller level
+  - AuditLog entity does not extend BaseEntity (only has `created_at`, no `updated_at`)
+  - CourseStats uses `@MapsId` with course_id as PK (FK to courses)
+

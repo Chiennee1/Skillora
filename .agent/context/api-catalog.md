@@ -138,13 +138,21 @@
 
 ## Admin Module
 
-| Method | Path | Auth | Role | Description |
-|--------|------|------|------|-------------|
-| GET | `/api/v1/admin/dashboard` | JWT | ADMIN | Dashboard stats |
-| GET | `/api/v1/admin/users` | JWT | ADMIN | List users |
-| PATCH | `/api/v1/admin/users/{id}/status` | JWT | ADMIN | Ban/activate |
-| PATCH | `/api/v1/admin/courses/{id}/approve` | JWT | ADMIN | Approve/reject |
-| GET | `/api/v1/admin/audit-logs` | JWT | ADMIN | Audit logs |
+| Status | Method | Path | Auth | Role | Description |
+|--------|--------|------|------|------|-------------|
+| Complete | GET | `/api/v1/admin/dashboard` | JWT | ADMIN | Platform dashboard stats (users, courses, enrollments, revenue, reviews) |
+| Complete | GET | `/api/v1/admin/revenue` | JWT | ADMIN | Revenue summary |
+| Complete | GET | `/api/v1/admin/users` | JWT | ADMIN | List users (filter: status, role, search) |
+| Complete | GET | `/api/v1/admin/users/{id}` | JWT | ADMIN | Get user detail |
+| Complete | PATCH | `/api/v1/admin/users/{id}/status` | JWT | ADMIN | Ban/activate/deactivate user |
+| Complete | GET | `/api/v1/admin/courses` | JWT | ADMIN | List all courses (any status) |
+| Complete | PATCH | `/api/v1/admin/courses/{id}/approve` | JWT | ADMIN | Approve course (REVIEWING/DRAFT → PUBLISHED) |
+| Complete | PATCH | `/api/v1/admin/courses/{id}/reject` | JWT | ADMIN | Reject course with reason |
+| Complete | GET | `/api/v1/admin/coupons` | JWT | ADMIN | List coupons |
+| Complete | POST | `/api/v1/admin/coupons` | JWT | ADMIN | Create coupon |
+| Complete | PUT | `/api/v1/admin/coupons/{id}` | JWT | ADMIN | Update coupon |
+| Complete | DELETE | `/api/v1/admin/coupons/{id}` | JWT | ADMIN | Deactivate coupon |
+| Complete | GET | `/api/v1/admin/audit-logs` | JWT | ADMIN | Audit logs (filter: entityType, action, actorId, from, to) |
 
 ## Health
 
