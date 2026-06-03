@@ -30,6 +30,7 @@ import com.example.skillora_platform.course.repository.SectionRepository;
 import com.example.skillora_platform.enrollment.repository.CourseCertificateRepository;
 import com.example.skillora_platform.enrollment.repository.EnrollmentRepository;
 import com.example.skillora_platform.enrollment.repository.LessonProgressRepository;
+import com.example.skillora_platform.notification.repository.NotificationRepository;
 import com.example.skillora_platform.user.entity.Role;
 import com.example.skillora_platform.user.entity.RoleName;
 import com.example.skillora_platform.user.entity.User;
@@ -79,6 +80,7 @@ class AssignmentIntegrationTest {
     @Autowired private CourseCertificateRepository courseCertificateRepository;
     @Autowired private AssignmentRepository assignmentRepository;
     @Autowired private AssignmentSubmissionRepository assignmentSubmissionRepository;
+    @Autowired private NotificationRepository notificationRepository;
 
     private User admin;
     private User instructor;
@@ -460,6 +462,7 @@ class AssignmentIntegrationTest {
     }
 
     private void cleanDatabase() {
+        notificationRepository.deleteAll();
         assignmentSubmissionRepository.deleteAll();
         assignmentRepository.deleteAll();
         courseCertificateRepository.deleteAll();

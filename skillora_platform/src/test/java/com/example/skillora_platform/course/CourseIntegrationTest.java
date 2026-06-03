@@ -28,6 +28,7 @@ import com.example.skillora_platform.course.repository.LessonResourceRepository;
 import com.example.skillora_platform.course.repository.LessonVideoRepository;
 import com.example.skillora_platform.course.repository.SectionRepository;
 import com.example.skillora_platform.course.service.BunnyStreamClient;
+import com.example.skillora_platform.notification.repository.NotificationRepository;
 import com.example.skillora_platform.user.entity.Role;
 import com.example.skillora_platform.user.entity.RoleName;
 import com.example.skillora_platform.user.entity.User;
@@ -120,6 +121,9 @@ class CourseIntegrationTest {
 
     @Autowired
     private LessonResourceRepository lessonResourceRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @MockitoBean
     private BunnyStreamClient bunnyStreamClient;
@@ -539,6 +543,7 @@ class CourseIntegrationTest {
     }
 
     private void cleanDatabase() {
+        notificationRepository.deleteAll();
         lessonResourceRepository.deleteAll();
         lessonVideoRepository.deleteAll();
         lessonRepository.deleteAll();

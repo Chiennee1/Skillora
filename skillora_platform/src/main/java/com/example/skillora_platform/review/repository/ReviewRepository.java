@@ -26,4 +26,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     @Query("SELECT COUNT(r) FROM Review r WHERE r.course.id = :courseId AND r.status = 'PUBLISHED'")
     long countPublishedByCourseId(@Param("courseId") Long courseId);
+
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.status = 'PUBLISHED'")
+    long countAllPublished();
+
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.status = 'PUBLISHED'")
+    Optional<Double> avgRatingAllPublished();
 }

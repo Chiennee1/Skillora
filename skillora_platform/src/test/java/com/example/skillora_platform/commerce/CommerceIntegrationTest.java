@@ -37,6 +37,7 @@ import com.example.skillora_platform.course.repository.CourseRepository;
 import com.example.skillora_platform.enrollment.entity.Enrollment;
 import com.example.skillora_platform.enrollment.entity.EnrollmentStatus;
 import com.example.skillora_platform.enrollment.repository.EnrollmentRepository;
+import com.example.skillora_platform.notification.repository.NotificationRepository;
 import com.example.skillora_platform.user.entity.Role;
 import com.example.skillora_platform.user.entity.RoleName;
 import com.example.skillora_platform.user.entity.User;
@@ -76,6 +77,7 @@ class CommerceIntegrationTest {
     @Autowired private OrderRepository orderRepository;
     @Autowired private OrderItemRepository orderItemRepository;
     @Autowired private PaymentTransactionRepository paymentTransactionRepository;
+    @Autowired private NotificationRepository notificationRepository;
 
     private User instructor;
     private User student;
@@ -452,6 +454,7 @@ class CommerceIntegrationTest {
     }
 
     private void cleanDatabase() {
+        notificationRepository.deleteAll();
         enrollmentRepository.deleteAll();
         cartItemRepository.deleteAll();
         cartRepository.deleteAll();

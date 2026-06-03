@@ -1,5 +1,6 @@
 package com.example.skillora_platform.review.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +17,8 @@ import com.example.skillora_platform.enrollment.entity.Enrollment;
 import com.example.skillora_platform.enrollment.service.LearningAccessService;
 import com.example.skillora_platform.exception.BusinessException;
 import com.example.skillora_platform.exception.ResourceNotFoundException;
+import com.example.skillora_platform.notification.event.ReviewCreatedEvent;
+import com.example.skillora_platform.notification.event.ReviewDeletedEvent;
 import com.example.skillora_platform.review.dto.ReviewCreateRequest;
 import com.example.skillora_platform.review.dto.ReviewResponse;
 import com.example.skillora_platform.review.dto.ReviewUpdateRequest;
@@ -41,6 +44,7 @@ public class ReviewService {
     private final CoursePermissionService permissionService;
     private final LearningAccessService learningAccessService;
     private final CourseRatingService courseRatingService;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ── List reviews (public, paginated) ──
 
@@ -88,6 +92,7 @@ public class ReviewService {
 
         Review saved = reviewRepository.save(review);
         courseRatingService.refreshCourseRating(courseId);
+        eventPublisher.publishEvent(new ReviewCreatedEvent(saved.getId()));
 
         log.info("User {} created review {} for course {}", actor.getId(), saved.getId(), courseId);
         return toResponse(saved, actor.getId());
@@ -124,8 +129,9 @@ public class ReviewService {
         }
 
         review.setStatus(ReviewStatus.DELETED);
-        reviewRepository.save(review);
+        Review saved = reviewRepository.save(review);
         courseRatingService.refreshCourseRating(review.getCourse().getId());
+        eventPublisher.publishEvent(new ReviewDeletedEvent(saved.getId()));
 
         log.info("User {} soft-deleted review {}", actor.getId(), reviewId);
     }

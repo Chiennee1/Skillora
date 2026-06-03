@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import com.example.skillora_platform.enrollment.repository.EnrollmentRepository;
 import com.example.skillora_platform.enrollment.repository.LessonProgressRepository;
 import com.example.skillora_platform.exception.BusinessException;
 import com.example.skillora_platform.exception.ResourceNotFoundException;
+import com.example.skillora_platform.notification.event.CertificateIssuedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +38,7 @@ public class LearningProgressService {
     private final LessonProgressRepository lessonProgressRepository;
     private final LessonRepository lessonRepository;
     private final CourseCertificateRepository courseCertificateRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<LessonProgressResponse> getProgress(Long enrollmentId) {
@@ -132,9 +135,10 @@ public class LearningProgressService {
                 .enrollment(enrollment)
                 .certificateCode("CERT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .build();
-        courseCertificateRepository.save(certificate);
+        CourseCertificate savedCertificate = courseCertificateRepository.save(certificate);
+        eventPublisher.publishEvent(new CertificateIssuedEvent(savedCertificate.getId()));
         log.info("Certificate {} generated for enrollment {}",
-                certificate.getCertificateCode(), enrollment.getId());
+                savedCertificate.getCertificateCode(), enrollment.getId());
     }
 
     private List<Lesson> getPublishedLessons(Course course) {

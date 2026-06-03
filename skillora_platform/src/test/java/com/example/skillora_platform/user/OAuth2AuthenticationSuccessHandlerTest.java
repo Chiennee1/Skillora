@@ -15,6 +15,7 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.example.skillora_platform.notification.repository.NotificationRepository;
 import com.example.skillora_platform.user.repository.InstructorProfileRepository;
 import com.example.skillora_platform.user.repository.PasswordResetTokenRepository;
 import com.example.skillora_platform.user.repository.RefreshTokenRepository;
@@ -46,8 +47,12 @@ class OAuth2AuthenticationSuccessHandlerTest {
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
+    @Autowired
+    private NotificationRepository notificationRepository;
+
     @BeforeEach
     void setUp() {
+        notificationRepository.deleteAll();
         passwordResetTokenRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         instructorProfileRepository.deleteAll();

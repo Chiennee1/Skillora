@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +38,10 @@ import com.example.skillora_platform.enrollment.entity.EnrollmentStatus;
 import com.example.skillora_platform.enrollment.repository.EnrollmentRepository;
 import com.example.skillora_platform.exception.BusinessException;
 import com.example.skillora_platform.exception.ResourceNotFoundException;
+import com.example.skillora_platform.notification.event.CourseEnrolledEvent;
+import com.example.skillora_platform.notification.event.OrderCancelledEvent;
+import com.example.skillora_platform.notification.event.OrderCreatedEvent;
+import com.example.skillora_platform.notification.event.OrderPaidEvent;
 import com.example.skillora_platform.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
@@ -57,6 +62,7 @@ public class OrderService {
     private final CoursePermissionService permissionService;
     private final CartService cartService;
     private final CouponService couponService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public OrderResponse checkout(CheckoutRequest request, String actorEmail) {
@@ -93,6 +99,10 @@ public class OrderService {
             consumeCoupon(saved.getCoupon());
         }
         cartItemRepository.deleteByCartId(cart.getId());
+        eventPublisher.publishEvent(new OrderCreatedEvent(saved.getId()));
+        if (freeCheckout) {
+            eventPublisher.publishEvent(new OrderPaidEvent(saved.getId()));
+        }
 
         log.info("User {} checked out order {} with status {}", actor.getId(), saved.getId(), saved.getStatus());
         return toResponse(saved);
@@ -133,6 +143,7 @@ public class OrderService {
         }
         order.setStatus(OrderStatus.CANCELLED);
         Order saved = orderRepository.save(order);
+        eventPublisher.publishEvent(new OrderCancelledEvent(saved.getId()));
         log.info("User {} cancelled order {}", actor.getId(), saved.getId());
         return toResponse(saved);
     }
@@ -199,7 +210,8 @@ public class OrderService {
                     .progressPercent(BigDecimal.ZERO)
                     .enrolledAt(now)
                     .build();
-            enrollmentRepository.save(enrollment);
+            Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
+            eventPublisher.publishEvent(new CourseEnrolledEvent(savedEnrollment.getId()));
 
             course.setTotalEnrollments(course.getTotalEnrollments() + 1);
             courseRepository.save(course);

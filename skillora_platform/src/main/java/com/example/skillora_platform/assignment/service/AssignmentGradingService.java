@@ -3,6 +3,7 @@ package com.example.skillora_platform.assignment.service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,8 @@ import com.example.skillora_platform.enrollment.entity.EnrollmentStatus;
 import com.example.skillora_platform.enrollment.service.LearningProgressService;
 import com.example.skillora_platform.exception.BusinessException;
 import com.example.skillora_platform.exception.ResourceNotFoundException;
+import com.example.skillora_platform.notification.event.AssignmentGradedEvent;
+import com.example.skillora_platform.notification.event.AssignmentReturnedEvent;
 import com.example.skillora_platform.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,7 @@ public class AssignmentGradingService {
     private final CoursePermissionService permissionService;
     private final LearningProgressService learningProgressService;
     private final AssignmentSubmissionService assignmentSubmissionService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public AssignmentSubmissionResponse grade(Long submissionId, AssignmentGradeRequest request, String actorEmail) {
@@ -55,10 +59,19 @@ public class AssignmentGradingService {
         if (previousStatus != SubmissionStatus.GRADED && savedSubmission.getStatus() == SubmissionStatus.GRADED) {
             completeAssignmentLesson(savedSubmission);
         }
+        publishNotificationEvent(savedSubmission);
 
         log.info("Instructor {} updated assignment submission {} to {}",
                 actor.getId(), savedSubmission.getId(), savedSubmission.getStatus());
         return assignmentSubmissionService.toResponse(savedSubmission);
+    }
+
+    private void publishNotificationEvent(AssignmentSubmission submission) {
+        if (submission.getStatus() == SubmissionStatus.GRADED) {
+            eventPublisher.publishEvent(new AssignmentGradedEvent(submission.getId()));
+        } else if (submission.getStatus() == SubmissionStatus.RETURNED) {
+            eventPublisher.publishEvent(new AssignmentReturnedEvent(submission.getId()));
+        }
     }
 
     private void applyGraded(

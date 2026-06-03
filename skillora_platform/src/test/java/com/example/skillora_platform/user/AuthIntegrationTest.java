@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.skillora_platform.notification.repository.NotificationRepository;
 import com.example.skillora_platform.user.entity.Role;
 import com.example.skillora_platform.user.entity.RoleName;
 import com.example.skillora_platform.user.entity.User;
@@ -68,10 +69,14 @@ class AuthIntegrationTest {
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
+        notificationRepository.deleteAll();
         passwordResetTokenRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         instructorProfileRepository.deleteAll();

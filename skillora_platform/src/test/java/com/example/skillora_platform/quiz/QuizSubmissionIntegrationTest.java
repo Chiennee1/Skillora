@@ -28,6 +28,7 @@ import com.example.skillora_platform.course.repository.SectionRepository;
 import com.example.skillora_platform.enrollment.repository.CourseCertificateRepository;
 import com.example.skillora_platform.enrollment.repository.EnrollmentRepository;
 import com.example.skillora_platform.enrollment.repository.LessonProgressRepository;
+import com.example.skillora_platform.notification.repository.NotificationRepository;
 import com.example.skillora_platform.quiz.repository.AnswerOptionRepository;
 import com.example.skillora_platform.quiz.repository.QuestionRepository;
 import com.example.skillora_platform.quiz.repository.QuizAttemptAnswerOptionRepository;
@@ -95,6 +96,7 @@ class QuizSubmissionIntegrationTest {
     @Autowired private QuizAttemptRepository quizAttemptRepository;
     @Autowired private QuizAttemptAnswerRepository quizAttemptAnswerRepository;
     @Autowired private QuizAttemptAnswerOptionRepository quizAttemptAnswerOptionRepository;
+    @Autowired private NotificationRepository notificationRepository;
 
     private User admin;
     private User instructor;
@@ -504,6 +506,7 @@ class QuizSubmissionIntegrationTest {
     }
 
     private void cleanDatabase() {
+        notificationRepository.deleteAll();
         quizAttemptAnswerOptionRepository.deleteAll();
         quizAttemptAnswerRepository.deleteAll();
         quizAttemptRepository.deleteAll();

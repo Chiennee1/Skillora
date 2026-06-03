@@ -21,4 +21,10 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
     boolean existsBySlug(String slug);
 
     boolean existsBySlugAndIdNot(String slug, Long id);
+
+    long countByStatusAndDeletedAtIsNull(CourseStatus status);
+
+    long countByDeletedAtIsNull();
+
+    Page<Course> findByDeletedAtIsNull(Pageable pageable);
 }

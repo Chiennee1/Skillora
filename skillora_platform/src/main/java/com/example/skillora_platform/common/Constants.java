@@ -21,6 +21,9 @@ public final class Constants {
     public static final String CART_API_PREFIX = API_V1_PREFIX + "/cart";
     public static final String COUPON_API_PREFIX = API_V1_PREFIX + "/coupons";
     public static final String ORDER_API_PREFIX = API_V1_PREFIX + "/orders";
+    public static final String CHAT_API_PREFIX = API_V1_PREFIX + "/chat";
+    public static final String NOTIFICATION_API_PREFIX = API_V1_PREFIX + "/notifications";
+    public static final String ADMIN_API_PREFIX = API_V1_PREFIX + "/admin";
 
     public static final int DEFAULT_PAGE_SIZE = 20;
     public static final int MAX_PAGE_SIZE = 100;

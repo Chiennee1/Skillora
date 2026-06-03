@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import com.example.skillora_platform.enrollment.repository.CourseCertificateRepo
 import com.example.skillora_platform.enrollment.repository.EnrollmentRepository;
 import com.example.skillora_platform.exception.BusinessException;
 import com.example.skillora_platform.exception.ResourceNotFoundException;
+import com.example.skillora_platform.notification.event.CourseEnrolledEvent;
 import com.example.skillora_platform.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,7 @@ public class EnrollmentService {
     private final CourseRepository courseRepository;
     private final CourseCertificateRepository courseCertificateRepository;
     private final CoursePermissionService permissionService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public EnrollmentResponse enroll(Long courseId, String actorEmail) {
@@ -79,6 +82,7 @@ public class EnrollmentService {
 
         course.setTotalEnrollments(course.getTotalEnrollments() + 1);
         courseRepository.save(course);
+        eventPublisher.publishEvent(new CourseEnrolledEvent(saved.getId()));
 
         log.info("User {} enrolled in free course {}", actor.getId(), courseId);
         return toResponse(saved);
