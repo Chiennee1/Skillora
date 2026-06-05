@@ -1,6 +1,7 @@
 package com.example.skillora_platform.commerce.repository;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +17,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @EntityGraph(attributePaths = {"coupon", "items", "items.course"})
     Page<Order> findDistinctByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user", "coupon", "items", "items.course"})
+    @Query("SELECT o FROM CommerceOrder o WHERE o.id = :id")
+    Optional<Order> findDetailedById(@Param("id") Long id);
 
     long countByStatus(OrderStatus status);
 

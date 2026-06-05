@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import com.example.skillora_platform.course.entity.Course;
+import com.example.skillora_platform.course.entity.CourseStatus;
 import com.example.skillora_platform.user.entity.User;
 
 public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecificationExecutor<Course> {
