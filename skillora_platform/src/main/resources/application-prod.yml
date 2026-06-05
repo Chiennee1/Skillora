@@ -13,6 +13,16 @@ spring:
         jdbc:
           time_zone: UTC
     show-sql: false
+  cache:
+    type: redis
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+management:
+  health:
+    redis:
+      enabled: ${REDIS_HEALTH_ENABLED:true}
 
 skillora:
   cors:

@@ -13,6 +13,15 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
         format_sql: false
     show-sql: false
+  flyway:
+    enabled: false
+  cache:
+    type: simple
+
+management:
+  health:
+    redis:
+      enabled: false
 
 skillora:
   cors:
@@ -22,6 +31,8 @@ skillora:
     jwt:
       issuer: skillora-test
       secret: skillora-test-secret-key-at-least-32-bytes-long
+  rate-limit:
+    enabled: false
 
 logging:
   level:
