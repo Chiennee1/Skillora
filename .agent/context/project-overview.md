@@ -1,68 +1,76 @@
 # Context: Project Overview
 
-> Snapshot of Skillora project state. Updated: 2026-06-01 (Phase 10 complete).
+> Snapshot of Skillora backend state. Updated: 2026-06-05 after production-backend completion pass.
 
 ## Project Summary
 
 | Attribute | Value |
 |-----------|-------|
 | Name | Skillora Platform |
-| Type | E-Learning Platform Backend |
+| Type | E-learning platform backend |
 | Stack | Spring Boot 3.5.14, Java 17, MySQL 8+, Redis 7 |
-| Architecture | Layered (Controller → Service → Repository → Entity) |
+| Architecture | Layered Controller -> Service -> Repository -> Entity |
 | API Base | `/api/v1` |
-| Planned Modules | 10 (user, course, enrollment, quiz, assignment, commerce, review, chat, notification, admin) |
-| Java Files | 290+ |
-| Test Suites | 14 (full `mvn.cmd test` passed on 2026-06-01) |
-| DB Tables | 30+ (full schema designed, seed data ready) |
+| Modules | 10: user, course, enrollment, quiz, assignment, commerce, review, chat, notification, admin |
+| Java Files | 314 |
+| Test Suites | 14 |
+| Latest Verification | `mvnw.cmd verify` passed 81/81, packaged the jar, generated JaCoCo, and passed the 60% coverage gate on 2026-06-05 |
+| API MVP Completeness | ~100% backend API surface implemented |
+| Production Readiness | ~88-90%; remaining work is mostly external-provider validation and scale hardening |
 
 ## Completion Status
 
-| Module | Status | Completeness |
-|--------|--------|-------------|
-| Foundation/Core Config | ✅ Complete | 100% |
-| User + Auth + JWT + OAuth2 | ✅ Complete | 100% |
-| Course Catalog + Content | ✅ Complete | 100% |
-| Enrollment + Progress | ✅ Complete | 100% |
-| Quiz Engine | Complete | 100% |
-| Assignment + Grading | Complete | 100% |
-| Commerce Core (Wishlist + Cart + Coupons + Orders) | ✅ Complete | 100% |
-| Review/Rating | ✅ Complete | 100% |
-| AI Chatbot (Gemini) | Complete - runtime verified | 100% |
-| Notifications | Complete - runtime verified | 100% |
-| Admin Dashboard + Audit | ✅ Complete | 100% |
+| Module | API Status | Production Notes |
+|--------|------------|------------------|
+| Foundation/Core Config | Complete | Actuator health, OpenAPI, profiles, Docker, CI, JaCoCo report, Flyway migration added |
+| User + Auth + JWT + OAuth2 | Complete | SMTP reset-email delivery and one-time OAuth code exchange remain future hardening |
+| Course Catalog + Content | Complete | Redis-backed public course cache added; Bunny webhook/status sync still deferred |
+| Enrollment + Progress | Complete | Free enrollment, progress, certificates, dashboard verified |
+| Quiz Engine | Complete | Timed-attempt enforcement still deferred |
+| Assignment + Grading | Complete | Managed file upload/scanning still deferred |
+| Commerce + Payments | Complete | VNPay and MoMo create/return/IPN code implemented; sandbox/provider validation still required |
+| Review/Rating | Complete | N+1 optimization for like counts remains scale debt |
+| AI Chatbot | Complete | Gemini runtime path implemented; streaming, quota dashboard, and circuit breaker deferred |
+| Notifications | Complete | REST + in-memory SSE implemented; broker/Redis pub-sub fanout needed for multi-instance deploy |
+| Admin Dashboard + Audit | Complete | Dashboard enum bug and audit lazy-load bug fixed; admin regression tests pass |
 
 ## What's Ready
 
 | Asset | Status | Notes |
 |-------|--------|-------|
-| DB Schema | ✅ Complete | `database/skill_database_schema.sql` — 30+ tables, 3 views |
-| Seed Data | ✅ Complete | `database/skillora_seed_data.sql` — sample data |
-| Spring Boot scaffold | ✅ Created | `SkilloraPlatformApplication.java` + pom.xml |
-| Core foundation | ✅ Complete | `common`, `exception`, `config` packages with tests |
-| User/Auth module | ✅ Complete | Register/login/refresh/logout/reset/profile/instructor/OAuth2 callback with integration tests |
-| Course module | ✅ Complete | Categories, courses, sections, lessons, resources, ownership, Bunny TUS upload ticket |
-| Enrollment module | ✅ Complete | Free enrollment, progress tracking, auto-completion, certificates, enrolled student lesson access, learning dashboard |
-| Quiz module | Complete | Nested quiz authoring, question/answer validation, enrolled access, one-step submission, auto-grading, attempts |
-| Assignment module | Complete | Assignment authoring, enrolled submission, returned resubmission, instructor/admin grading, progress completion |
-| Review module | ✅ Complete | Course reviews (1-per-enrollment), like/unlike, soft-delete, course rating refresh, public listing with likedByMe |
-| Commerce module | ✅ Complete | Student wishlist/cart, coupon validation, checkout orders, zero-total auto-enrollment, getOrderById, cancelOrder, PaymentTransaction entity; payment gateways deferred |
-| AI Chatbot module | Complete | Gemini REST chat, DB-backed conversations/messages, bounded history, course-context access checks, explicit provider/config errors |
-| Notification module | Complete | DB notifications, list/read/read-all APIs, after-commit domain listeners, in-memory SSE stream |
-| Admin module | ✅ Complete | Dashboard stats, user management (ban/activate), course approval/rejection, coupon CRUD, audit logging with filters |
-| Secret env support | Complete | `.env.local` is imported by Spring Boot and ignored by git; `.env.example` documents required private variables |
-| Maven dependencies | ✅ Configured | Web, Security, OAuth2 Resource Server, JPA, Validation, Actuator, SpringDoc, MySQL, H2, Lombok |
-| Agent framework | ✅ Configured | `.agent/` directory with rules, skills, context |
+| DB Schema | Complete | Raw schema remains in `database/`; Flyway `V1__init_schema.sql` added for app migration |
+| Seed Data | Complete | `database/skillora_seed_data.sql` sample data |
+| Spring Boot backend | Complete | 314 Java files across 10 modules |
+| Payment Gateway Code | Complete | VNPay HMAC-SHA512 and MoMo HMAC-SHA256 signing/callback validation implemented |
+| Payment Idempotency | Complete | Duplicate successful callbacks do not duplicate coupon usage, enrollments, or notifications |
+| Redis Cache | Complete | Course list/detail cache with 5 minute TTL; simple cache in test/dev by default |
+| Rate Limiting | Initial | App-local limiter for auth writes, chat ask, and payment create/IPN endpoints |
+| Observability | Initial | Actuator health/info/metrics/prometheus enabled |
+| Docker | Initial | Dockerfile and compose for app/MySQL/Redis |
+| CI | Initial | GitHub Actions backend `mvnw verify` workflow |
+| Test Coverage | Initial | JaCoCo gate 60% instruction coverage; latest report: instruction 82.08%, line 85.21%, branch 53.10% |
+| Agent Context | Updated | `.agent/context/*` reflects current implementation state |
 
 ## External Dependencies
 
 | Service | Status | Config |
 |---------|--------|--------|
-| MySQL 8+ | ✅ Required | `DB_*` env vars |
-| Redis 7 | ⚡ Optional | Fallback to simple cache |
-| VNPay | 🔲 To configure | Primary payment gateway |
-| MoMo | 🔲 To configure | Secondary payment gateway |
-| Gemini AI | Local env supported | `GEMINI_API_KEY`; default model `gemini-2.5-flash`; fails explicitly when not configured |
-| Cloudinary | 🔲 To configure | Image upload |
-| Bunny Stream | 🔲 To configure | `BUNNY_LIBRARY_ID`, `BUNNY_API_KEY`, TUS upload ticket flow implemented |
-| SMTP (MailHog) | ⚡ Optional | Disabled by default |
+| MySQL 8+ | Required | `DB_*`; production should use Flyway + `ddl-auto=validate` |
+| Redis 7 | Production cache | `REDIS_*`; tests disable Redis health and use simple cache |
+| VNPay | Implemented, needs merchant config | `VNPAY_*`, return/IPN endpoints implemented |
+| MoMo | Implemented, needs partner config | `MOMO_*`, create/return/IPN endpoints implemented |
+| Gemini AI | Implemented | `GEMINI_API_KEY`; explicit failure when missing |
+| Bunny Stream | Upload-ticket implemented | `BUNNY_LIBRARY_ID`, `BUNNY_API_KEY`; webhook sync deferred |
+| Cloudinary | Not implemented | Image upload hardening remains future work |
+| SMTP | Not implemented | Password-reset email delivery remains future work |
+
+## Remaining Production Gaps
+
+| Gap | Priority | Notes |
+|-----|----------|-------|
+| Validate Flyway + `ddl-auto=validate` against clean MySQL | High | Migration is added but not yet verified against a live clean MySQL database in this pass |
+| VNPay/MoMo sandbox end-to-end validation | High | Code and tests pass, but real provider credentials/callbacks still need sandbox verification |
+| Circuit breakers/retries for external APIs | High | Needed for Gemini, Bunny, MoMo/VNPay create calls |
+| Distributed rate limiting and SSE fanout | Medium | Current limiter/SSE are single-instance |
+| Pending order expiration job | Medium | Manual cancel exists; scheduled cleanup not yet implemented |
+| SMTP and upload security | Medium | Password reset email, Cloudinary/images, assignment file scanning |

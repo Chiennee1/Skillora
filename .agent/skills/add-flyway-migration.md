@@ -1,4 +1,4 @@
-# Skill: Add Flyway Migration
+﻿# Skill: Add Flyway Migration
 
 > Create a versioned Flyway migration.
 
@@ -30,4 +30,4 @@ CREATE TABLE {table_name} (
 
 ## Baseline
 
-Current schema: `skillora_platform/database/skill_database_schema.sql` → `V1__baseline.sql`
+Current schema: `skillora_platform/database/schema_reference_only.sql` â†’ `V1__baseline.sql`

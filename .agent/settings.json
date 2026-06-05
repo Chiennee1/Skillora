@@ -1,4 +1,4 @@
-{
+﻿{
   "$schema": "https://skillora.com/agent-settings-schema.json",
   "version": "1.0.0",
   "project": "skillora",
@@ -13,7 +13,7 @@
     "protected_paths": [
       ".env",
       ".env.docker",
-      "database/skill_database_schema.sql",
+      "database/schema_reference_only.sql",
       "src/main/resources/application.properties"
     ]
   },

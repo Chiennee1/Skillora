@@ -1,83 +1,99 @@
 # Context: Module Map
 
-> Module plan and inter-module relationships for Skillora.
+> Module plan and real code relationships for Skillora. Updated: 2026-06-05.
 
 ## Dependency Graph
 
-```
-user ←── course ←── quiz
-  ↑        ↑         ↑
-  │        ├── enrollment ←── assignment
-  │        ├── review
-  │        ├── commerce
-  │        └── chat (AI chatbot)
-  │              
-  └── admin (reads from: user, course, commerce, review, enrollment)
-  
-notification (cross-cutting — triggered by events from any module)
+```text
+user <- course <- quiz
+  ^      ^        ^
+  |      |        |
+  |      +-- enrollment <- assignment
+  |      +-- review
+  |      +-- commerce
+  |      +-- chat
+  |
+  +-- admin reads user/course/commerce/review/enrollment
+
+notification is cross-cutting and listens to domain events.
 ```
 
 ## Module Details
 
-### user (core — no external module dependency)
-- **Tables**: users, roles, user_roles, user_profiles, instructor_profiles, refresh_tokens, password_reset_tokens
-- **Entities**: User, Role, RoleName, UserProfile, InstructorProfile, RefreshToken, PasswordResetToken, UserStatus
-- **Services**: AuthService, JwtService, RefreshTokenService, SocialAuthService, UserProfileService, InstructorProfileService, UserDetailsServiceImpl
-- **Used by**: ALL other modules (User entity referenced everywhere)
+### user
+- Tables: `users`, `roles`, `user_roles`, `user_profiles`, `instructor_profiles`, `refresh_tokens`, `password_reset_tokens`
+- Key entities: `User`, `Role`, `UserProfile`, `InstructorProfile`, `RefreshToken`, `PasswordResetToken`, `UserStatus`
+- Key services: `AuthService`, `JwtService`, `RefreshTokenService`, `SocialAuthService`, `UserProfileService`, `InstructorProfileService`, `UserDetailsServiceImpl`
+- Used by every domain module.
 
-### course (depends on: user)
-- **Tables**: categories, courses, course_categories, course_requirements, course_outcomes, sections, lessons, lesson_videos, lesson_video_variants, lesson_resources
-- **Entities**: Category, Course, CourseCategory, CourseRequirement, CourseOutcome, Section, Lesson, LessonVideo, LessonVideoVariant, LessonResource + enums (CourseLevel, CourseStatus, LessonType, VideoProvider, VideoStatus, ResourceType)
-- **Services**: CategoryService, CourseService, SectionService, LessonService, LessonVideoService, LessonResourceService, CoursePermissionService
+### course
+- Tables: `categories`, `courses`, `course_categories`, `course_requirements`, `course_outcomes`, `sections`, `lessons`, `lesson_videos`, `lesson_video_variants`, `lesson_resources`
+- Key entities: `Category`, `Course`, `CourseCategory`, `CourseRequirement`, `CourseOutcome`, `Section`, `Lesson`, `LessonVideo`, `LessonVideoVariant`, `LessonResource`
+- Key services: `CategoryService`, `CourseService`, `SectionService`, `LessonService`, `LessonVideoService`, `LessonResourceService`, `CoursePermissionService`
+- Cache: `CourseService` caches public list/detail reads and evicts on course writes.
 
-### enrollment (depends on: user, course)
-- **Tables**: enrollments, lesson_progress, course_certificates
-- **Entities**: Enrollment, LessonProgress, CourseCertificate, EnrollmentStatus
-- **Services**: EnrollmentService, LearningProgressService, CertificateService, LearningDashboardFacade, LearningAccessService
+### enrollment
+- Tables: `enrollments`, `lesson_progress`, `course_certificates`
+- Key entities: `Enrollment`, `LessonProgress`, `CourseCertificate`, `EnrollmentStatus`
+- Key services: `EnrollmentService`, `LearningProgressService`, `CertificateService`, `LearningDashboardFacade`, `LearningAccessService`
 
-### quiz (depends on: user, course, enrollment)
-- **Tables**: quizzes, questions, answer_options, quiz_attempts, quiz_attempt_answers, quiz_attempt_answer_options
-- **Entities**: Quiz, Question, AnswerOption, QuizAttempt, QuizAttemptAnswer, QuizAttemptAnswerOption, QuestionType
-- **Services**: QuizService, QuizSubmissionService, QuizHistoryService
+### quiz
+- Tables: `quizzes`, `questions`, `answer_options`, `quiz_attempts`, `quiz_attempt_answers`, `quiz_attempt_answer_options`
+- Key entities: `Quiz`, `Question`, `AnswerOption`, `QuizAttempt`, `QuizAttemptAnswer`, `QuizAttemptAnswerOption`, `QuestionType`
+- Key services: `QuizService`, `QuizSubmissionService`, `QuizHistoryService`
 
-### assignment (depends on: user, course, enrollment)
-- **Tables**: assignments, assignment_submissions
-- **Entities**: Assignment, AssignmentSubmission, SubmissionStatus
-- **Services**: AssignmentService, AssignmentSubmissionService, AssignmentGradingService
+### assignment
+- Tables: `assignments`, `assignment_submissions`
+- Key entities: `Assignment`, `AssignmentSubmission`, `SubmissionStatus`
+- Key services: `AssignmentService`, `AssignmentSubmissionService`, `AssignmentGradingService`
 
-### commerce (depends on: user, course)
-- **Tables**: wishlists, carts, cart_items, coupons, orders, order_items, payment_transactions
-- **Entities**: Wishlist, Cart, CartItem, Coupon, Order, OrderItem, PaymentTransaction, OrderStatus, PaymentGateway, TxStatus, DiscountType
-- **Services**: WishlistService, CartService, CouponService, OrderService, PaymentService (interface), VNPayPaymentService, MoMoPaymentService
+### commerce
+- Tables: `wishlists`, `carts`, `cart_items`, `coupons`, `orders`, `order_items`, `payment_transactions`
+- Key entities: `Wishlist`, `Cart`, `CartItem`, `Coupon`, `Order`, `OrderItem`, `PaymentTransaction`, `OrderStatus`, `PaymentGateway`, `TxStatus`, `DiscountType`
+- Key services: `WishlistService`, `CartService`, `CouponService`, `OrderService`, `PaymentService`
+- Payment support classes: `PaymentSignatureUtils`, `MomoClient`, `DefaultMomoClient`, `MomoCreatePaymentPayload`, `MomoCreatePaymentResult`
+- Controllers: `WishlistController`, `CartController`, `CouponController`, `OrderController`, `PaymentController`
 
-### review (depends on: user, course, enrollment)
-- **Tables**: reviews, review_likes
-- **Entities**: Review, ReviewLike, ReviewLikeId, ReviewStatus
-- **Services**: ReviewService, CourseStatsService
+### review
+- Tables: `reviews`, `review_likes`
+- Key entities: `Review`, `ReviewLike`, `ReviewLikeId`, `ReviewStatus`
+- Key services: `ReviewService`, `CourseRatingService`
 
-### chat (depends on: user, course)
-- **Tables**: chat_conversations, chat_messages
-- **Entities**: ChatConversation, ChatMessage, ChatRole
-- **Services**: ChatbotService, GeminiClient, ChatRateLimiterService
+### chat
+- Tables: `chat_conversations`, `chat_messages`
+- Key entities: `ChatConversation`, `ChatMessage`, `ChatRole`
+- Key services: `ChatbotService`, `GeminiClient`, `DefaultGeminiClient`
+- Rate limiting is currently handled by the cross-cutting `RateLimitFilter`, not a chat-specific service.
 
-### notification (depends on: user — event-driven from all modules)
-- **Tables**: notifications
-- **Entities**: Notification, NotificationType
-- **Services**: NotificationService
-- **Listeners**: EnrollmentNotificationListener, PaymentNotificationListener, ReviewNotificationListener
+### notification
+- Tables: `notifications`
+- Key entities: `Notification`, `NotificationType`
+- Key services: `NotificationService`, `NotificationSseService`
+- Listeners: enrollment, assignment, payment, review, and course lifecycle notification listeners.
 
-### admin (depends on: user, course, commerce, review, enrollment)
-- **Tables**: course_stats, audit_logs
-- **Entities**: CourseStats, AuditLog
-- **Services**: AdminDashboardService, AuditLogService
+### admin
+- Tables: `course_stats`, `audit_logs`
+- Key entities: `CourseStats`, `AuditLog`
+- Key services: `AdminDashboardService`, `AdminUserService`, `AdminCourseService`, `AdminCouponService`, `AdminAuditLogService`, `AuditLogService`, `CourseStatsService`
+- `AdminAuditLogService` maps audit actor fields inside a read-only transaction to avoid lazy-loading failures.
 
 ## Cross-Cutting Packages
 
-### config (cross-cutting)
-- SecurityConfig, JwtConfig, VNPayConfig, MoMoConfig, RedisCacheConfig, GeminiConfig, BunnyStreamConfig, CloudinaryConfig, SecurityBeansConfig, JpaConfig
+### config
+- Real classes: `SecurityConfig`, `OpenApiConfig`, `JwtProperties`, `CorsProperties`, `AppOAuth2Properties`, `GeminiProperties`, `BunnyStreamProperties`, `PaymentProperties`, `VnPayProperties`, `MomoProperties`, `CacheConfig`, `RateLimitProperties`, `RateLimitFilter`
+- Not currently present: `CloudinaryConfig`, dedicated circuit breaker config, distributed rate-limit config.
 
-### common (shared utilities)
-- ApiResponse, BaseEntity, Constants, PageResponse, SlugUtils, ExecutionTimeLoggingAspect, ExecutionLogProperties
+### common
+- Real classes: `ApiResponse`, `BaseEntity`, `Constants`, `PageResponse`, `SlugUtils`
+- Not currently present: execution-time AOP logging classes.
 
-### exception (error handling)
-- GlobalExceptionHandler, BusinessException, ResourceNotFoundException
+### exception
+- Real classes: `GlobalExceptionHandler`, `BusinessException`, `ResourceNotFoundException`
+
+## Infrastructure
+
+- Flyway migration: `src/main/resources/db/migration/V1__init_schema.sql`
+- Docker: `Dockerfile`, `.dockerignore`, `docker-compose.yml`
+- CI: `.github/workflows/backend-ci.yml`
+- Observability: Spring Actuator health/info/metrics/prometheus endpoints
+- Cache: Redis cache manager in production; simple cache in test/dev defaults

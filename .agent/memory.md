@@ -23,7 +23,7 @@
 ### AD-004: Dual Payment Gateway (2026-05)
 - **Decision**: VNPay as primary + MoMo as secondary payment gateway
 - **Reason**: VNPay covers banking apps (most reliable), MoMo covers e-wallet users (most popular)
-- **Implementation**: Unified PaymentService interface, provider-specific implementations
+- **Implementation**: Concrete commerce `PaymentService` handles shared validation/idempotency/signing flow; MoMo provider calls are isolated behind `MomoClient` for testability. See AD-019 for the production implementation pass.
 
 ### AD-005: Video Hosting Strategy (2026-05)
 - **Decision**: Bunny Stream for video courses + Cloudinary for images
@@ -190,3 +190,26 @@
   - AuditLog entity does not extend BaseEntity (only has `created_at`, no `updated_at`)
   - CourseStats uses `@MapsId` with course_id as PK (FK to courses)
 
+### AD-019: Production Payment and Backend Hardening Pass
+- **Date**: 2026-06-05
+- **Decision**: Implement VNPay/MoMo payment runtime flows directly in the commerce module and add baseline production infrastructure.
+- **Reason**: Commerce checkout had pending paid orders but no gateway completion path, which blocked production readiness.
+- **Implementation**:
+  - Added `PaymentController` under `/api/v1/payments` for VNPay create/return/IPN and MoMo create/return/IPN.
+  - Added concrete `PaymentService`, signing helpers, VNPay/MoMo config properties, `MomoClient`, and idempotent callback handling.
+  - Successful gateway callbacks mark orders `PAID`, create enrollments, consume coupons once, and publish payment/order events.
+  - Terminal gateway failures mark payment transactions and orders failed without creating enrollments.
+  - Fixed admin dashboard enum status counting and audit-log lazy actor mapping.
+  - Added Flyway baseline migration, Redis course cache, app-local rate limiting, Prometheus actuator metrics, Dockerfile, docker-compose, GitHub Actions, and JaCoCo reporting.
+- **Verification**:
+  - `mvnw.cmd test-compile` passed.
+  - `mvnw.cmd test -Dtest=AdminIntegrationTest` passed 20/20.
+  - `mvnw.cmd test -Dtest=CommerceIntegrationTest` passed 14/14.
+  - `mvnw.cmd test -Dtest=CourseIntegrationTest` passed 7/7.
+  - `mvnw.cmd test` passed 81/81.
+  - `mvnw.cmd package -DskipTests` passed.
+  - `mvnw.cmd verify` passed 81/81, packaged the jar, generated JaCoCo, and passed the 60% instruction coverage gate.
+- **Remaining production validation**:
+  - Validate Flyway + `ddl-auto=validate` against clean MySQL.
+  - Run VNPay/MoMo sandbox callbacks with real merchant credentials.
+  - Add circuit breakers/retries and distributed rate limiting before high-traffic deployment.

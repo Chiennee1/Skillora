@@ -1,4 +1,4 @@
-# Agent: Database Engineer
+﻿# Agent: Database Engineer
 
 > Database schema design, migration, and query optimization agent.
 
@@ -35,7 +35,7 @@ You design schemas, write migrations, and optimize queries.
 ## Current DB Stats
 
 - **Total tables**: 30+ (including join tables)
-- **Schema file**: `skillora_platform/database/skill_database_schema.sql`
+- **Schema file**: `skillora_platform/database/schema_reference_only.sql`
 - **Seed data**: `skillora_platform/database/skillora_seed_data.sql`
 - **DB name**: Skillora
 - **Views**: 3 (v_course_detail, v_enrollment_progress, v_student_courses)

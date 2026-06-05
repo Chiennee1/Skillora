@@ -1,4 +1,4 @@
-# MCP Tools: Database (MySQL + Redis)
+﻿# MCP Tools: Database (MySQL + Redis)
 
 > MCP tool configurations for database management.
 
@@ -11,7 +11,7 @@ mysql -u root -p123456 -h localhost -P 3306 Skillora
 
 ### Import Schema
 ```sql
-SOURCE e:/Profile/Skillora/skillora_platform/database/skill_database_schema.sql;
+SOURCE e:/Profile/Skillora/skillora_platform/database/schema_reference_only.sql;
 ```
 
 ### Import Seed Data

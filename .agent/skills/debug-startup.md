@@ -1,4 +1,4 @@
-# Skill: Debug Startup
+﻿# Skill: Debug Startup
 
 > Debug Spring Boot startup failures.
 
@@ -20,7 +20,7 @@ mysql -u root -p123456 -h localhost -P 3306 Skillora
 ### Entity-Schema Mismatch (ddl-auto=validate)
 ```
 # Import schema first:
-mysql -u root -p123456 Skillora < skillora_platform/database/skill_database_schema.sql
+mysql -u root -p123456 Skillora < skillora_platform/database/schema_reference_only.sql
 ```
 
 ### Bean Creation Error

@@ -1,0 +1,69 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: skillora-mysql
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-Skillora}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-skillora-root-password}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - skillora_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD:-skillora-root-password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: skillora-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - skillora_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+    container_name: skillora-app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-Skillora}
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:-skillora-root-password}
+      CACHE_TYPE: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-at-least-32-bytes-long}
+      JWT_ISSUER: ${JWT_ISSUER:-skillora-platform}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-http://localhost:8080}
+      PAYMENT_RESULT_URL: ${PAYMENT_RESULT_URL:-http://localhost:5173/payments/result}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      BUNNY_LIBRARY_ID: ${BUNNY_LIBRARY_ID:-}
+      BUNNY_API_KEY: ${BUNNY_API_KEY:-}
+      VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-}
+      VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-}
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY:-}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY:-}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    restart: unless-stopped
+
+volumes:
+  skillora_mysql:
+  skillora_redis:
