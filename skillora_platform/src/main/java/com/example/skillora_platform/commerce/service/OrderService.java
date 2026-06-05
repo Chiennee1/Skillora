@@ -42,6 +42,8 @@ import com.example.skillora_platform.notification.event.CourseEnrolledEvent;
 import com.example.skillora_platform.notification.event.OrderCancelledEvent;
 import com.example.skillora_platform.notification.event.OrderCreatedEvent;
 import com.example.skillora_platform.notification.event.OrderPaidEvent;
+import com.example.skillora_platform.notification.event.PaymentFailedEvent;
+import com.example.skillora_platform.notification.event.PaymentPaidEvent;
 import com.example.skillora_platform.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
@@ -146,6 +148,52 @@ public class OrderService {
         eventPublisher.publishEvent(new OrderCancelledEvent(saved.getId()));
         log.info("User {} cancelled order {}", actor.getId(), saved.getId());
         return toResponse(saved);
+    }
+
+    @Transactional
+    public void markPaidFromGateway(
+            Long orderId,
+            PaymentGateway gateway,
+            String gatewayTransactionId,
+            Long paymentTransactionId
+    ) {
+        Order order = orderRepository.findDetailedById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        if (order.getStatus() == OrderStatus.PAID) {
+            return;
+        }
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BusinessException("Only PENDING orders can be marked as paid", HttpStatus.CONFLICT);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        order.setStatus(OrderStatus.PAID);
+        order.setPaymentGateway(gateway);
+        order.setGatewayTransactionId(gatewayTransactionId);
+        order.setPaidAt(now);
+        order.setFailureReason(null);
+        createEnrollments(order, order.getUser(), now);
+        consumeCoupon(order.getCoupon());
+        orderRepository.save(order);
+        eventPublisher.publishEvent(new OrderPaidEvent(order.getId()));
+        eventPublisher.publishEvent(new PaymentPaidEvent(order.getId(), paymentTransactionId));
+
+        log.info("Order {} marked as paid by {}", order.getId(), gateway);
+    }
+
+    @Transactional
+    public void markFailedFromGateway(Long orderId, Long paymentTransactionId, String reason) {
+        Order order = orderRepository.findDetailedById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        if (order.getStatus() != OrderStatus.PENDING) {
+            return;
+        }
+        order.setStatus(OrderStatus.FAILED);
+        order.setFailureReason(reason);
+        orderRepository.save(order);
+        eventPublisher.publishEvent(new PaymentFailedEvent(order.getId(), paymentTransactionId, reason));
+
+        log.info("Order {} marked as failed by payment gateway: {}", order.getId(), reason);
     }
 
     private void validateCart(User actor, Cart cart) {

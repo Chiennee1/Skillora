@@ -9,6 +9,8 @@ import java.util.Set;
 
 import jakarta.persistence.EntityManager;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +55,10 @@ public class CourseService {
     private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = Constants.CACHE_COURSES_PUBLISHED,
+            key = "{#search, #level, #categoryId, #page, #size, #sort}"
+    )
     public PageResponse<CourseSummaryResponse> listPublic(
             String search,
             CourseLevel level,
@@ -78,6 +84,11 @@ public class CourseService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = Constants.CACHE_COURSE_DETAIL,
+            key = "#idOrSlug",
+            condition = "#actorEmail == null"
+    )
     public CourseResponse getByIdOrSlug(String idOrSlug, String actorEmail) {
         Course course = resolveByIdOrSlug(idOrSlug);
         if (course.getStatus() == CourseStatus.PUBLISHED && course.getDeletedAt() == null) {
@@ -90,6 +101,10 @@ public class CourseService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = {
+            Constants.CACHE_COURSES_PUBLISHED,
+            Constants.CACHE_COURSE_DETAIL
+    }, allEntries = true)
     public CourseResponse create(CourseCreateRequest request, String actorEmail) {
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
         User instructor = resolveInstructor(actor, request.getInstructorId());
@@ -122,6 +137,10 @@ public class CourseService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = {
+            Constants.CACHE_COURSES_PUBLISHED,
+            Constants.CACHE_COURSE_DETAIL
+    }, allEntries = true)
     public CourseResponse update(Long id, CourseUpdateRequest request, String actorEmail) {
         Course course = findActiveCourse(id);
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
@@ -150,6 +169,10 @@ public class CourseService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = {
+            Constants.CACHE_COURSES_PUBLISHED,
+            Constants.CACHE_COURSE_DETAIL
+    }, allEntries = true)
     public void delete(Long id, String actorEmail) {
         Course course = findActiveCourse(id);
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
@@ -159,6 +182,10 @@ public class CourseService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = {
+            Constants.CACHE_COURSES_PUBLISHED,
+            Constants.CACHE_COURSE_DETAIL
+    }, allEntries = true)
     public CourseResponse publish(Long id, String actorEmail) {
         Course course = findActiveCourse(id);
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
@@ -170,6 +197,10 @@ public class CourseService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = {
+            Constants.CACHE_COURSES_PUBLISHED,
+            Constants.CACHE_COURSE_DETAIL
+    }, allEntries = true)
     public CourseResponse archive(Long id, String actorEmail) {
         Course course = findActiveCourse(id);
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);

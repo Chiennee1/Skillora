@@ -32,58 +32,41 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    /**
-     * List published reviews for a course (public).
-     * Authenticated users get the likedByMe flag populated.
-     */
     @GetMapping(Constants.REVIEW_API_PREFIX)
     public ApiResponse<PageResponse<ReviewResponse>> list(
             @RequestParam("courseId") Long courseId,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "" + Constants.DEFAULT_PAGE_SIZE) int size,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
+            @AuthenticationPrincipal Jwt jwt) {
         Long currentUserId = jwt != null ? extractUserId(jwt) : null;
         return ApiResponse.success(reviewService.listReviews(courseId, currentUserId, page, size));
     }
 
-    /**
-     * Create a review for a course. Requires STUDENT role and active enrollment.
-     */
     @PostMapping(Constants.REVIEW_API_PREFIX)
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<ReviewResponse>> create(
             @AuthenticationPrincipal Jwt jwt,
-            @Valid @RequestBody ReviewCreateRequest request
-    ) {
+            @Valid @RequestBody ReviewCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Review created successfully",
                         reviewService.create(request, jwt.getSubject())));
     }
 
-    /**
-     * Update own review.
-     */
     @PutMapping(Constants.REVIEW_API_PREFIX + "/{id}")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<ReviewResponse> update(
             @PathVariable("id") Long id,
             @AuthenticationPrincipal Jwt jwt,
-            @Valid @RequestBody ReviewUpdateRequest request
-    ) {
+            @Valid @RequestBody ReviewUpdateRequest request) {
         return ApiResponse.success("Review updated successfully",
                 reviewService.update(id, request, jwt.getSubject()));
     }
 
-    /**
-     * Soft-delete a review (owner or ADMIN).
-     */
     @DeleteMapping(Constants.REVIEW_API_PREFIX + "/{id}")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<Void> delete(
             @PathVariable("id") Long id,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
+            @AuthenticationPrincipal Jwt jwt) {
         reviewService.delete(id, jwt.getSubject());
         return ApiResponse.success("Review deleted successfully");
     }
@@ -95,8 +78,7 @@ public class ReviewController {
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<Void> like(
             @PathVariable("id") Long id,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
+            @AuthenticationPrincipal Jwt jwt) {
         reviewService.like(id, jwt.getSubject());
         return ApiResponse.success("Review liked successfully");
     }
@@ -108,8 +90,7 @@ public class ReviewController {
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<Void> unlike(
             @PathVariable("id") Long id,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
+            @AuthenticationPrincipal Jwt jwt) {
         reviewService.unlike(id, jwt.getSubject());
         return ApiResponse.success("Review unliked successfully");
     }
