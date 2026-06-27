@@ -85,6 +85,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, Constants.LESSON_API_PREFIX + "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, Constants.REVIEW_API_PREFIX).permitAll()
                         .requestMatchers(HttpMethod.GET, Constants.PAYMENT_API_PREFIX + "/vnpay/return").permitAll()
+                        .requestMatchers(HttpMethod.GET, Constants.PAYMENT_API_PREFIX + "/vnpay/ipn").permitAll()
                         .requestMatchers(HttpMethod.GET, Constants.PAYMENT_API_PREFIX + "/momo/return").permitAll()
                         .requestMatchers(HttpMethod.POST, Constants.PAYMENT_API_PREFIX + "/vnpay/ipn").permitAll()
                         .requestMatchers(HttpMethod.POST, Constants.PAYMENT_API_PREFIX + "/momo/ipn").permitAll()

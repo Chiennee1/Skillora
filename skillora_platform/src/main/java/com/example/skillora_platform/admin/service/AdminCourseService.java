@@ -2,6 +2,7 @@ package com.example.skillora_platform.admin.service;
 
 import java.time.LocalDateTime;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.skillora_platform.admin.dto.AdminCourseResponse;
+import com.example.skillora_platform.common.Constants;
 import com.example.skillora_platform.common.PageResponse;
 import com.example.skillora_platform.course.entity.Course;
 import com.example.skillora_platform.course.entity.CourseStatus;
@@ -30,20 +32,26 @@ public class AdminCourseService {
 
     @Transactional(readOnly = true)
     public PageResponse<AdminCourseResponse> listCourses(int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), Constants.MAX_PAGE_SIZE);
         Page<AdminCourseResponse> result = courseRepository.findByDeletedAtIsNull(
-                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))
+                        PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt")))
                 .map(this::toResponse);
         return PageResponse.from(result);
     }
 
     @Transactional
+    @CacheEvict(cacheNames = {
+            Constants.CACHE_COURSES_PUBLISHED,
+            Constants.CACHE_COURSE_DETAIL
+    }, allEntries = true)
     public AdminCourseResponse approveCourse(Long id, String adminEmail, String ipAddress) {
         Course course = courseRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + id));
 
-        if (course.getStatus() != CourseStatus.REVIEWING && course.getStatus() != CourseStatus.DRAFT) {
+        if (course.getStatus() != CourseStatus.REVIEWING) {
             throw new BusinessException(
-                    "Only courses in REVIEWING or DRAFT status can be approved, current: " + course.getStatus(),
+                    "Only courses in REVIEWING status can be approved, current: " + course.getStatus(),
                     HttpStatus.CONFLICT);
         }
 
@@ -63,27 +71,35 @@ public class AdminCourseService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = {
+            Constants.CACHE_COURSES_PUBLISHED,
+            Constants.CACHE_COURSE_DETAIL
+    }, allEntries = true)
     public AdminCourseResponse rejectCourse(Long id, String reason, String adminEmail, String ipAddress) {
         Course course = courseRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + id));
 
-        if (course.getStatus() != CourseStatus.REVIEWING && course.getStatus() != CourseStatus.DRAFT) {
+        if (course.getStatus() != CourseStatus.REVIEWING) {
             throw new BusinessException(
-                    "Only courses in REVIEWING or DRAFT status can be rejected, current: " + course.getStatus(),
+                    "Only courses in REVIEWING status can be rejected, current: " + course.getStatus(),
                     HttpStatus.CONFLICT);
         }
+        if (reason == null || reason.isBlank()) {
+            throw new BusinessException("Reject reason is required", HttpStatus.BAD_REQUEST);
+        }
 
+        String cleanReason = reason.trim();
         CourseStatus oldStatus = course.getStatus();
         course.setStatus(CourseStatus.REJECTED);
-        course.setRejectReason(reason);
+        course.setRejectReason(cleanReason);
         courseRepository.save(course);
 
         auditLogService.log(adminEmail, "COURSE", id, "REJECT_COURSE",
                 "{\"status\":\"" + oldStatus + "\"}",
-                "{\"status\":\"REJECTED\",\"rejectReason\":\"" + (reason != null ? reason : "") + "\"}",
+                "{\"status\":\"REJECTED\",\"rejectReason\":\"" + cleanReason + "\"}",
                 ipAddress, null);
 
-        log.info("Admin {} rejected course {} with reason: {}", adminEmail, id, reason);
+        log.info("Admin {} rejected course {} with reason: {}", adminEmail, id, cleanReason);
         return toResponse(course);
     }
 

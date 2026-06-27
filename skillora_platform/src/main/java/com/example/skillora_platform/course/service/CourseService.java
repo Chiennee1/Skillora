@@ -190,8 +190,18 @@ public class CourseService {
         Course course = findActiveCourse(id);
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
         permissionService.requireOwnerOrAdmin(course, actor);
-        course.setStatus(CourseStatus.PUBLISHED);
-        course.setPublishedAt(LocalDateTime.now());
+
+        if (course.getStatus() == CourseStatus.REVIEWING) {
+            return toResponse(course);
+        }
+        if (course.getStatus() != CourseStatus.DRAFT && course.getStatus() != CourseStatus.REJECTED) {
+            throw new BusinessException(
+                    "Only DRAFT or REJECTED courses can be submitted for review, current: " + course.getStatus(),
+                    HttpStatus.CONFLICT);
+        }
+
+        course.setStatus(CourseStatus.REVIEWING);
+        course.setPublishedAt(null);
         course.setRejectReason(null);
         return toResponse(courseRepository.save(course));
     }

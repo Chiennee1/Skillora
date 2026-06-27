@@ -50,11 +50,10 @@ public class AdminCourseController {
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<AdminCourseResponse> rejectCourse(
             @PathVariable("id") Long id,
-            @Valid @RequestBody(required = false) AdminCourseActionRequest request,
+            @Valid @RequestBody AdminCourseActionRequest request,
             @AuthenticationPrincipal Jwt jwt,
             HttpServletRequest httpRequest) {
-        String reason = request != null ? request.getReason() : null;
         return ApiResponse.success("Course rejected",
-                adminCourseService.rejectCourse(id, reason, jwt.getSubject(), httpRequest.getRemoteAddr()));
+                adminCourseService.rejectCourse(id, request.getReason(), jwt.getSubject(), httpRequest.getRemoteAddr()));
     }
 }

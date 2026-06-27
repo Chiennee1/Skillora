@@ -36,5 +36,6 @@ skillora:
 
 logging:
   level:
-    com.example.skillora_platform: DEBUG
+    com.example.skillora_platform: INFO
     org.springframework.security: WARN
+    org.hibernate.SQL: WARN

@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.skillora_platform.admin.repository.AuditLogRepository;
 import com.example.skillora_platform.course.repository.CategoryRepository;
 import com.example.skillora_platform.course.repository.CourseOutcomeRepository;
 import com.example.skillora_platform.course.repository.CourseRepository;
@@ -97,6 +98,7 @@ class QuizSubmissionIntegrationTest {
     @Autowired private QuizAttemptAnswerRepository quizAttemptAnswerRepository;
     @Autowired private QuizAttemptAnswerOptionRepository quizAttemptAnswerOptionRepository;
     @Autowired private NotificationRepository notificationRepository;
+    @Autowired private AuditLogRepository auditLogRepository;
 
     private User admin;
     private User instructor;
@@ -168,12 +170,31 @@ class QuizSubmissionIntegrationTest {
                         .header("Authorization", bearer(studentToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.questions[0].answerOptions[0].correct").doesNotExist())
-                .andExpect(jsonPath("$.data.questions[0].answerOptions[1].correct").doesNotExist());
+                .andExpect(jsonPath("$.data.questions[0].answerOptions[1].correct").doesNotExist())
+                .andExpect(jsonPath("$.data.questions[0].explanation").doesNotExist());
 
         mockMvc.perform(get("/api/v1/quizzes/{id}", quizId)
                         .header("Authorization", bearer(instructorToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.questions[0].answerOptions[0].correct").value(true));
+    }
+
+    @Test
+    void shouldDenyEnrolledStudentAccessToQuizOnUnpublishedLesson() throws Exception {
+        Long lessonId = createPublishedQuizCourse("Hidden Quiz Course", false);
+        JsonNode quiz = createSingleQuestionQuiz(lessonId, 2, instructorToken);
+        Long quizId = quiz.at("/data/id").asLong();
+        Long courseId = quiz.at("/data/courseId").asLong();
+        enroll(courseId, studentToken);
+
+        mockMvc.perform(get("/api/v1/quizzes/{id}", quizId)
+                        .header("Authorization", bearer(studentToken)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/quizzes/{id}/submit", quizId)
+                        .header("Authorization", bearer(studentToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(wrongSingleSubmissionJson(quiz)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -271,10 +292,14 @@ class QuizSubmissionIntegrationTest {
     }
 
     private Long createPublishedQuizCourse(String title) throws Exception {
+        return createPublishedQuizCourse(title, true);
+    }
+
+    private Long createPublishedQuizCourse(String title, boolean lessonPublished) throws Exception {
         Long categoryId = createCategory("Quiz", adminToken);
         Long courseId = createCourse(title, categoryId, instructorToken);
         Long sectionId = createSection(courseId, "Quiz Section", instructorToken);
-        Long lessonId = createLesson(sectionId, "Quiz Lesson", "QUIZ", instructorToken);
+        Long lessonId = createLesson(sectionId, "Quiz Lesson", "QUIZ", lessonPublished, instructorToken);
         publishCourse(courseId, instructorToken);
         return lessonId;
     }
@@ -298,7 +323,12 @@ class QuizSubmissionIntegrationTest {
     private void publishCourse(Long courseId, String accessToken) throws Exception {
         mockMvc.perform(patch("/api/v1/courses/{id}/publish", courseId)
                         .header("Authorization", bearer(accessToken)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REVIEWING"));
+        mockMvc.perform(patch("/api/v1/admin/courses/{id}/approve", courseId)
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PUBLISHED"));
     }
 
     private Long createCategory(String name, String accessToken) throws Exception {
@@ -339,6 +369,16 @@ class QuizSubmissionIntegrationTest {
     }
 
     private Long createLesson(Long sectionId, String title, String type, String accessToken) throws Exception {
+        return createLesson(sectionId, title, type, true, accessToken);
+    }
+
+    private Long createLesson(
+            Long sectionId,
+            String title,
+            String type,
+            boolean published,
+            String accessToken
+    ) throws Exception {
         int orderIndex = lessonRepository.findBySectionIdAndDeletedAtIsNullOrderByOrderIndexAscIdAsc(sectionId)
                 .size();
         JsonNode response = postJson("/api/v1/sections/%d/lessons".formatted(sectionId), """
@@ -348,10 +388,10 @@ class QuizSubmissionIntegrationTest {
                     "content": "Content",
                     "durationSeconds": 0,
                     "preview": false,
-                    "published": true,
+                    "published": %s,
                     "orderIndex": %d
                 }
-                """.formatted(title, type, orderIndex), accessToken, status().isCreated());
+                """.formatted(title, type, published, orderIndex), accessToken, status().isCreated());
         return response.at("/data/id").asLong();
     }
 
@@ -383,6 +423,7 @@ class QuizSubmissionIntegrationTest {
                             "type": "SINGLE",
                             "points": 10,
                             "orderIndex": 0,
+                            "explanation": "Java is the JVM language here.",
                             "answerOptions": [
                                 { "content": "Java", "correct": true, "orderIndex": 0 },
                                 { "content": "Python", "correct": false, "orderIndex": 1 }
@@ -506,6 +547,7 @@ class QuizSubmissionIntegrationTest {
     }
 
     private void cleanDatabase() {
+        auditLogRepository.deleteAll();
         notificationRepository.deleteAll();
         quizAttemptAnswerOptionRepository.deleteAll();
         quizAttemptAnswerRepository.deleteAll();

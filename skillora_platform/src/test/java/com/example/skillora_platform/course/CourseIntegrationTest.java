@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.skillora_platform.admin.repository.AuditLogRepository;
 import com.example.skillora_platform.course.dto.BunnyVideoCreated;
 import com.example.skillora_platform.course.repository.CategoryRepository;
 import com.example.skillora_platform.course.repository.CourseOutcomeRepository;
@@ -125,6 +126,9 @@ class CourseIntegrationTest {
     @Autowired
     private NotificationRepository notificationRepository;
 
+    @Autowired
+    private AuditLogRepository auditLogRepository;
+
     @MockitoBean
     private BunnyStreamClient bunnyStreamClient;
 
@@ -172,6 +176,16 @@ class CourseIntegrationTest {
         Long courseId = draftCourse.at("/data/id").asLong();
         mockMvc.perform(patch("/api/v1/courses/{id}/publish", courseId)
                         .header("Authorization", bearer(instructorToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Course submitted for review"))
+                .andExpect(jsonPath("$.data.status").value("REVIEWING"));
+
+        mockMvc.perform(get("/api/v1/courses?search=spring"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content", hasSize(0)));
+
+        mockMvc.perform(patch("/api/v1/admin/courses/{id}/approve", courseId)
+                        .header("Authorization", bearer(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("PUBLISHED"));
 
@@ -310,9 +324,7 @@ class CourseIntegrationTest {
         Long sectionId = createSection(courseId, "Access Module", instructorToken);
         Long previewLessonId = createLesson(sectionId, "Preview", "VIDEO", 300, true, instructorToken);
         Long privateLessonId = createLesson(sectionId, "Private", "TEXT", 300, false, instructorToken);
-        mockMvc.perform(patch("/api/v1/courses/{id}/publish", courseId)
-                        .header("Authorization", bearer(instructorToken)))
-                .andExpect(status().isOk());
+        submitAndApproveCourse(courseId, instructorToken);
 
         mockMvc.perform(get("/api/v1/lessons/{id}", previewLessonId))
                 .andExpect(status().isOk())
@@ -457,6 +469,17 @@ class CourseIntegrationTest {
         return response.at("/data/id").asLong();
     }
 
+    private void submitAndApproveCourse(Long courseId, String accessToken) throws Exception {
+        mockMvc.perform(patch("/api/v1/courses/{id}/publish", courseId)
+                        .header("Authorization", bearer(accessToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REVIEWING"));
+        mockMvc.perform(patch("/api/v1/admin/courses/{id}/approve", courseId)
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PUBLISHED"));
+    }
+
     private JsonNode postJson(String path, String json, String accessToken, ResultMatcher expectedStatus)
             throws Exception {
         String response = mockMvc.perform(post(path)
@@ -543,6 +566,7 @@ class CourseIntegrationTest {
     }
 
     private void cleanDatabase() {
+        auditLogRepository.deleteAll();
         notificationRepository.deleteAll();
         lessonResourceRepository.deleteAll();
         lessonVideoRepository.deleteAll();

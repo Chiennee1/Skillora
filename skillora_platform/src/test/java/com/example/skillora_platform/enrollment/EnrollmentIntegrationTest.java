@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.skillora_platform.admin.repository.AuditLogRepository;
 import com.example.skillora_platform.course.dto.BunnyVideoCreated;
 import com.example.skillora_platform.course.repository.CategoryRepository;
 import com.example.skillora_platform.course.repository.CourseOutcomeRepository;
@@ -88,6 +89,7 @@ class EnrollmentIntegrationTest {
     @Autowired private LessonProgressRepository lessonProgressRepository;
     @Autowired private CourseCertificateRepository courseCertificateRepository;
     @Autowired private NotificationRepository notificationRepository;
+    @Autowired private AuditLogRepository auditLogRepository;
     @MockitoBean private BunnyStreamClient bunnyStreamClient;
 
     private User admin;
@@ -269,6 +271,27 @@ class EnrollmentIntegrationTest {
     }
 
     @Test
+    void shouldDenyEnrolledStudentAccessToUnpublishedSectionOrLesson() throws Exception {
+        Long categoryId = createCategory("Backend", adminToken);
+        Long courseId = createCourse("Hidden Content Course", categoryId, 0, instructorToken);
+        Long publishedSectionId = createSection(courseId, "Published Module", instructorToken);
+        Long hiddenLessonId = createLesson(
+                publishedSectionId, "Hidden Lesson", "TEXT", 300, false, false, instructorToken);
+        Long hiddenSectionId = createSection(courseId, "Hidden Module", false, instructorToken);
+        Long lessonInHiddenSectionId = createLesson(
+                hiddenSectionId, "Lesson In Hidden Section", "TEXT", 300, false, true, instructorToken);
+        publishCourse(courseId, instructorToken);
+        enroll(courseId, studentToken);
+
+        mockMvc.perform(get("/api/v1/lessons/{id}", hiddenLessonId)
+                        .header("Authorization", bearer(studentToken)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/lessons/{id}", lessonInHiddenSectionId)
+                        .header("Authorization", bearer(studentToken)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void shouldReturnLearningDashboard() throws Exception {
         Long courseId = createPublishedFreeCourse("Dashboard Course");
         enroll(courseId, studentToken);
@@ -311,7 +334,12 @@ class EnrollmentIntegrationTest {
     private void publishCourse(Long courseId, String accessToken) throws Exception {
         mockMvc.perform(patch("/api/v1/courses/{id}/publish", courseId)
                         .header("Authorization", bearer(accessToken)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REVIEWING"));
+        mockMvc.perform(patch("/api/v1/admin/courses/{id}/approve", courseId)
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PUBLISHED"));
     }
 
     private Long createCategory(String name, String accessToken) throws Exception {
@@ -340,19 +368,37 @@ class EnrollmentIntegrationTest {
     }
 
     private Long createSection(Long courseId, String title, String accessToken) throws Exception {
+        return createSection(courseId, title, true, accessToken);
+    }
+
+    private Long createSection(Long courseId, String title, boolean published, String accessToken) throws Exception {
+        int orderIndex = sectionRepository.findByCourseIdAndDeletedAtIsNullOrderByOrderIndexAscIdAsc(courseId)
+                .size();
         JsonNode response = postJson("/api/v1/courses/%d/sections".formatted(courseId), """
                 {
                     "title": "%s",
                     "description": "Section description",
-                    "orderIndex": 0,
-                    "published": true
+                    "orderIndex": %d,
+                    "published": %s
                 }
-                """.formatted(title), accessToken, status().isCreated());
+                """.formatted(title, orderIndex, published), accessToken, status().isCreated());
         return response.at("/data/id").asLong();
     }
 
     private Long createLesson(
             Long sectionId, String title, String type, int durationSeconds, boolean preview, String accessToken
+    ) throws Exception {
+        return createLesson(sectionId, title, type, durationSeconds, preview, true, accessToken);
+    }
+
+    private Long createLesson(
+            Long sectionId,
+            String title,
+            String type,
+            int durationSeconds,
+            boolean preview,
+            boolean published,
+            String accessToken
     ) throws Exception {
         int orderIndex = lessonRepository.findBySectionIdAndDeletedAtIsNullOrderByOrderIndexAscIdAsc(sectionId)
                 .size();
@@ -363,10 +409,11 @@ class EnrollmentIntegrationTest {
                     "content": "Content",
                     "durationSeconds": %d,
                     "preview": %s,
-                    "published": true,
+                    "published": %s,
                     "orderIndex": %d
                 }
-                """.formatted(title, type, durationSeconds, preview, orderIndex), accessToken, status().isCreated());
+                """.formatted(title, type, durationSeconds, preview, published, orderIndex),
+                accessToken, status().isCreated());
         return response.at("/data/id").asLong();
     }
 
@@ -405,6 +452,7 @@ class EnrollmentIntegrationTest {
     }
 
     private void cleanDatabase() {
+        auditLogRepository.deleteAll();
         notificationRepository.deleteAll();
         courseCertificateRepository.deleteAll();
         lessonProgressRepository.deleteAll();

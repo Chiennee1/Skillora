@@ -269,8 +269,30 @@ class AdminIntegrationTest {
     }
 
     @Test
+    void shouldRejectCourseWithoutReason() throws Exception {
+        Course course = createCourse("Reject Without Reason Course", CourseStatus.REVIEWING, BigDecimal.ZERO);
+
+        mockMvc.perform(patch(ADMIN_PREFIX + "/courses/{id}/reject", course.getId())
+                        .header("Authorization", bearer(adminToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reason": " "}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void shouldNotApproveAlreadyPublishedCourse() throws Exception {
         Course course = createCourse("Published Course", CourseStatus.PUBLISHED, BigDecimal.ZERO);
+
+        mockMvc.perform(patch(ADMIN_PREFIX + "/courses/{id}/approve", course.getId())
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void shouldNotApproveDraftCourse() throws Exception {
+        Course course = createCourse("Draft Approval Course", CourseStatus.DRAFT, BigDecimal.ZERO);
 
         mockMvc.perform(patch(ADMIN_PREFIX + "/courses/{id}/approve", course.getId())
                         .header("Authorization", bearer(adminToken)))

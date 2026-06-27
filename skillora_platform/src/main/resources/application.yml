@@ -22,6 +22,17 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       timeout: ${REDIS_TIMEOUT:2s}
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
 
 server:
   servlet:
@@ -31,6 +42,8 @@ management:
   health:
     redis:
       enabled: ${REDIS_HEALTH_ENABLED:false}
+    mail:
+      enabled: ${MAIL_HEALTH_ENABLED:false}
   endpoints:
     web:
       exposure:
@@ -52,6 +65,8 @@ springdoc:
     tags-sorter: alpha
 
 skillora:
+  auth:
+    password-reset-url: ${PASSWORD_RESET_URL:${FRONTEND_URL:http://localhost:5173}/reset-password?token={token}}
   cors:
     allowed-origins:
       - ${FRONTEND_URL:http://localhost:5173}

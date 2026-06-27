@@ -70,6 +70,10 @@ public class AssignmentService {
             return toResponse(assignment, null);
         }
 
+        if (!lessonService.isPublishedLearningContent(assignment.getLesson())) {
+            throw new BusinessException("Enrollment required to access this assignment", HttpStatus.FORBIDDEN);
+        }
+
         Enrollment enrollment = learningAccessService.getActiveEnrollment(actor.getId(), course.getId());
         if (enrollment == null) {
             throw new BusinessException("Enrollment required to access this assignment", HttpStatus.FORBIDDEN);

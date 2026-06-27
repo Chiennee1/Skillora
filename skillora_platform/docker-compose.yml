@@ -47,11 +47,18 @@ services:
       CACHE_TYPE: redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET:-change-me-at-least-32-bytes-long}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required and must be at least 32 characters}
       JWT_ISSUER: ${JWT_ISSUER:-skillora-platform}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      PASSWORD_RESET_URL: ${PASSWORD_RESET_URL:-http://localhost:5173/reset-password?token={token}}
       PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-http://localhost:8080}
       PAYMENT_RESULT_URL: ${PAYMENT_RESULT_URL:-http://localhost:5173/payments/result}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS_ENABLE: ${MAIL_SMTP_STARTTLS_ENABLE:-false}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       BUNNY_LIBRARY_ID: ${BUNNY_LIBRARY_ID:-}
       BUNNY_API_KEY: ${BUNNY_API_KEY:-}

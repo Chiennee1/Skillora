@@ -31,6 +31,7 @@ public class PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
     private final Environment environment;
+    private final PasswordResetMailService passwordResetMailService;
 
     @Transactional
     public PasswordResetTokenResponse requestReset(String email) {
@@ -60,9 +61,13 @@ public class PasswordResetService {
                 .expiresAt(expiresAt)
                 .build();
         passwordResetTokenRepository.save(resetToken);
+        boolean exposeResetToken = shouldExposeResetToken();
+        if (!exposeResetToken) {
+            passwordResetMailService.sendResetLink(user, rawToken, expiresAt);
+        }
         return PasswordResetTokenResponse.builder()
-                .resetToken(shouldExposeResetToken() ? rawToken : null)
-                .expiresAt(shouldExposeResetToken() ? expiresAt : null)
+                .resetToken(exposeResetToken ? rawToken : null)
+                .expiresAt(exposeResetToken ? expiresAt : null)
                 .build();
     }
 

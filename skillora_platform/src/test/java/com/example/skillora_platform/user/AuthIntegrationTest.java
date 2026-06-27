@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.skillora_platform.admin.repository.AuditLogRepository;
 import com.example.skillora_platform.notification.repository.NotificationRepository;
 import com.example.skillora_platform.user.entity.Role;
 import com.example.skillora_platform.user.entity.RoleName;
@@ -72,10 +73,14 @@ class AuthIntegrationTest {
     private NotificationRepository notificationRepository;
 
     @Autowired
+    private AuditLogRepository auditLogRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
+        auditLogRepository.deleteAll();
         notificationRepository.deleteAll();
         passwordResetTokenRepository.deleteAll();
         refreshTokenRepository.deleteAll();
@@ -238,8 +243,9 @@ class AuthIntegrationTest {
 
     @Test
     void shouldIssueDevResetTokenAndResetPassword() throws Exception {
-        postJson("/api/v1/auth/register", registerJson("reset@example.com", "Reset User", "STUDENT"),
+        JsonNode registerResponse = postJson("/api/v1/auth/register", registerJson("reset@example.com", "Reset User", "STUDENT"),
                 status().isCreated());
+        String oldRefreshToken = registerResponse.at("/data/refreshToken").asText();
 
         JsonNode forgotResponse = postJson("/api/v1/auth/forgot-password",
                 """
@@ -259,6 +265,15 @@ class AuthIntegrationTest {
                                 }
                                 """.formatted(resetToken)))
                 .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "refreshToken": "%s"
+                                }
+                                """.formatted(oldRefreshToken)))
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -19,6 +19,7 @@ import com.example.skillora_platform.common.Constants;
 import com.example.skillora_platform.common.PageResponse;
 import com.example.skillora_platform.course.entity.Course;
 import com.example.skillora_platform.course.service.CoursePermissionService;
+import com.example.skillora_platform.course.service.LessonService;
 import com.example.skillora_platform.enrollment.entity.Enrollment;
 import com.example.skillora_platform.enrollment.service.LearningAccessService;
 import com.example.skillora_platform.exception.BusinessException;
@@ -35,6 +36,7 @@ public class AssignmentSubmissionService {
     private final AssignmentSubmissionRepository assignmentSubmissionRepository;
     private final AssignmentService assignmentService;
     private final CoursePermissionService permissionService;
+    private final LessonService lessonService;
     private final LearningAccessService learningAccessService;
 
     @Transactional
@@ -42,6 +44,9 @@ public class AssignmentSubmissionService {
         User actor = permissionService.requireActor(actorEmail);
         Assignment assignment = assignmentService.findAssignmentWithLesson(assignmentId);
         Course course = assignment.getLesson().getSection().getCourse();
+        if (!lessonService.isPublishedLearningContent(assignment.getLesson())) {
+            throw new BusinessException("Enrollment required to submit this assignment", HttpStatus.FORBIDDEN);
+        }
         Enrollment enrollment = learningAccessService.getActiveEnrollment(actor.getId(), course.getId());
         if (enrollment == null) {
             throw new BusinessException("Enrollment required to submit this assignment", HttpStatus.FORBIDDEN);

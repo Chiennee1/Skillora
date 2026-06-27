@@ -381,7 +381,7 @@ class CommerceIntegrationTest {
         Map<String, String> params = signedVnPayParams(tx, "00", "00", "VNPAY_TX_001", tx.getPayType(),
                 vnPayMinorAmount(tx.getAmount()));
 
-        postVnPayIpn(params)
+        getVnPayIpn(params)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.RspCode").value("00"));
         postVnPayIpn(params)
@@ -442,7 +442,7 @@ class CommerceIntegrationTest {
     }
 
     @Test
-    void shouldMarkOrderFailedForTerminalVnPayFailure() throws Exception {
+    void shouldKeepOrderPendingForTerminalVnPayFailureAndAllowRetry() throws Exception {
         Long orderId = createPendingGatewayOrder("VNPay Failed Course", studentToken);
         Long txId = postJson("/api/v1/payments/vnpay/create", """
                 { "orderId": %d }
@@ -455,11 +455,19 @@ class CommerceIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.RspCode").value("00"));
 
-        assertThat(orderRepository.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.FAILED);
+        assertThat(orderRepository.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.PENDING);
         assertThat(paymentTransactionRepository.findById(txId).orElseThrow().getStatus()).isEqualTo(TxStatus.FAILED);
         assertThat(enrollmentRepository.countByUserId(student.getId())).isZero();
         assertThat(notificationRepository.findAll().stream().map(notification -> notification.getType()).toList())
                 .contains(NotificationType.PAYMENT_FAILED);
+
+        Long retryTxId = postJson("/api/v1/payments/vnpay/create", """
+                { "orderId": %d }
+                """.formatted(orderId), studentToken, status().isCreated())
+                .at("/data/paymentTransactionId").asLong();
+        assertThat(retryTxId).isNotEqualTo(txId);
+        assertThat(paymentTransactionRepository.findById(retryTxId).orElseThrow().getStatus())
+                .isEqualTo(TxStatus.PENDING);
     }
 
     @Test
@@ -536,6 +544,35 @@ class CommerceIntegrationTest {
         assertThat(enrollmentRepository.countByUserId(student.getId())).isZero();
     }
 
+    @Test
+    void shouldKeepOrderPendingForTerminalMomoFailureAndAllowRetry() throws Exception {
+        when(momoClient.createPayment(any(MomoCreatePaymentPayload.class))).thenAnswer(invocation -> {
+            MomoCreatePaymentPayload payload = invocation.getArgument(0);
+            return new MomoCreatePaymentResult(payload.partnerCode(), payload.requestId(), payload.orderId(),
+                    payload.amount(), 123L, "Created.", 0, "https://pay.momo.vn/" + payload.orderId(), null);
+        });
+        Long orderId = createPendingGatewayOrder("MoMo Failed Course", studentToken);
+        Long txId = postJson("/api/v1/payments/momo/create", """
+                { "orderId": %d }
+                """.formatted(orderId), studentToken, status().isCreated())
+                .at("/data/paymentTransactionId").asLong();
+        PaymentTransaction tx = paymentTransactionRepository.findById(txId).orElseThrow();
+        MomoIpnRequest ipn = momoIpn(tx, 1006, "Payment failed.", "qr", "1003");
+        ipn.setSignature(paymentService.signMomoIpnForTest(ipn));
+
+        postMomoIpn(ipn).andExpect(status().isNoContent());
+
+        assertThat(orderRepository.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.PENDING);
+        assertThat(paymentTransactionRepository.findById(txId).orElseThrow().getStatus()).isEqualTo(TxStatus.FAILED);
+        assertThat(enrollmentRepository.countByUserId(student.getId())).isZero();
+
+        Long retryTxId = postJson("/api/v1/payments/momo/create", """
+                { "orderId": %d }
+                """.formatted(orderId), studentToken, status().isCreated())
+                .at("/data/paymentTransactionId").asLong();
+        assertThat(retryTxId).isNotEqualTo(txId);
+    }
+
     private JsonNode addToCart(Long courseId, String accessToken, ResultMatcher expectedStatus) throws Exception {
         String response = mockMvc.perform(post("/api/v1/cart/{courseId}", courseId)
                         .header("Authorization", bearer(accessToken)))
@@ -580,6 +617,12 @@ class CommerceIntegrationTest {
     private ResultActions postVnPayIpn(Map<String, String> params) throws Exception {
         MockHttpServletRequestBuilder request = post("/api/v1/payments/vnpay/ipn")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED);
+        params.forEach(request::param);
+        return mockMvc.perform(request);
+    }
+
+    private ResultActions getVnPayIpn(Map<String, String> params) throws Exception {
+        MockHttpServletRequestBuilder request = get("/api/v1/payments/vnpay/ipn");
         params.forEach(request::param);
         return mockMvc.perform(request);
     }

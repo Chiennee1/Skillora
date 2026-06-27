@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.skillora_platform.admin.repository.AuditLogRepository;
 import com.example.skillora_platform.assignment.repository.AssignmentRepository;
 import com.example.skillora_platform.assignment.repository.AssignmentSubmissionRepository;
 import com.example.skillora_platform.course.repository.CategoryRepository;
@@ -81,6 +82,7 @@ class AssignmentIntegrationTest {
     @Autowired private AssignmentRepository assignmentRepository;
     @Autowired private AssignmentSubmissionRepository assignmentSubmissionRepository;
     @Autowired private NotificationRepository notificationRepository;
+    @Autowired private AuditLogRepository auditLogRepository;
 
     private User admin;
     private User instructor;
@@ -181,6 +183,24 @@ class AssignmentIntegrationTest {
                         .header("Authorization", bearer(instructorToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.courseId").value(setup.courseId()));
+    }
+
+    @Test
+    void shouldDenyEnrolledStudentAccessToAssignmentOnUnpublishedLesson() throws Exception {
+        CourseSetup setup = createPublishedCourseWithLesson(
+                "Hidden Assignment Course", "ASSIGNMENT", false);
+        JsonNode assignment = createAssignment(setup.lessonId(), 7, instructorToken, status().isCreated());
+        Long assignmentId = assignment.at("/data/id").asLong();
+        enroll(setup.courseId(), studentToken);
+
+        mockMvc.perform(get("/api/v1/assignments/{id}", assignmentId)
+                        .header("Authorization", bearer(studentToken)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/assignments/{id}/submit", assignmentId)
+                        .header("Authorization", bearer(studentToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(submissionJson("Hidden answer")))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -311,10 +331,18 @@ class AssignmentIntegrationTest {
     }
 
     private CourseSetup createPublishedCourseWithLesson(String title, String lessonType) throws Exception {
+        return createPublishedCourseWithLesson(title, lessonType, true);
+    }
+
+    private CourseSetup createPublishedCourseWithLesson(
+            String title,
+            String lessonType,
+            boolean lessonPublished
+    ) throws Exception {
         Long categoryId = createCategory("Assignment", adminToken);
         Long courseId = createCourse(title, categoryId, instructorToken);
         Long sectionId = createSection(courseId, "Assignment Section", instructorToken);
-        Long lessonId = createLesson(sectionId, "Assignment Lesson", lessonType, instructorToken);
+        Long lessonId = createLesson(sectionId, "Assignment Lesson", lessonType, lessonPublished, instructorToken);
         publishCourse(courseId, instructorToken);
         return new CourseSetup(courseId, lessonId);
     }
@@ -348,7 +376,12 @@ class AssignmentIntegrationTest {
     private void publishCourse(Long courseId, String accessToken) throws Exception {
         mockMvc.perform(patch("/api/v1/courses/{id}/publish", courseId)
                         .header("Authorization", bearer(accessToken)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REVIEWING"));
+        mockMvc.perform(patch("/api/v1/admin/courses/{id}/approve", courseId)
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PUBLISHED"));
     }
 
     private Long createCategory(String name, String accessToken) throws Exception {
@@ -389,6 +422,16 @@ class AssignmentIntegrationTest {
     }
 
     private Long createLesson(Long sectionId, String title, String type, String accessToken) throws Exception {
+        return createLesson(sectionId, title, type, true, accessToken);
+    }
+
+    private Long createLesson(
+            Long sectionId,
+            String title,
+            String type,
+            boolean published,
+            String accessToken
+    ) throws Exception {
         int orderIndex = lessonRepository.findBySectionIdAndDeletedAtIsNullOrderByOrderIndexAscIdAsc(sectionId)
                 .size();
         JsonNode response = postJson("/api/v1/sections/%d/lessons".formatted(sectionId), """
@@ -398,10 +441,10 @@ class AssignmentIntegrationTest {
                     "content": "Content",
                     "durationSeconds": 0,
                     "preview": false,
-                    "published": true,
+                    "published": %s,
                     "orderIndex": %d
                 }
-                """.formatted(title, type, orderIndex), accessToken, status().isCreated());
+                """.formatted(title, type, published, orderIndex), accessToken, status().isCreated());
         return response.at("/data/id").asLong();
     }
 
@@ -462,6 +505,7 @@ class AssignmentIntegrationTest {
     }
 
     private void cleanDatabase() {
+        auditLogRepository.deleteAll();
         notificationRepository.deleteAll();
         assignmentSubmissionRepository.deleteAll();
         assignmentRepository.deleteAll();

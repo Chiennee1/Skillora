@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.skillora_platform.admin.dto.AdminUserResponse;
 import com.example.skillora_platform.admin.dto.AdminUserStatusRequest;
 import com.example.skillora_platform.admin.spec.AdminUserSpec;
+import com.example.skillora_platform.common.Constants;
 import com.example.skillora_platform.common.PageResponse;
 import com.example.skillora_platform.exception.BusinessException;
 import com.example.skillora_platform.exception.ResourceNotFoundException;
@@ -40,9 +41,11 @@ public class AdminUserService {
                 .and(AdminUserSpec.statusEquals(status))
                 .and(AdminUserSpec.hasRole(role))
                 .and(AdminUserSpec.searchByNameOrEmail(search));
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), Constants.MAX_PAGE_SIZE);
 
         Page<AdminUserResponse> result = userRepository.findAll(spec,
-                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))
+                        PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt")))
                 .map(this::toResponse);
 
         return PageResponse.from(result);

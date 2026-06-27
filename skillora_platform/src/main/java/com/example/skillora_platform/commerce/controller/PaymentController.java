@@ -72,6 +72,11 @@ public class PaymentController {
         return paymentService.handleVnPayIpn(params);
     }
 
+    @GetMapping("/vnpay/ipn")
+    public VnPayIpnResponse vnpayIpnGet(@RequestParam Map<String, String> params) {
+        return paymentService.handleVnPayIpn(params);
+    }
+
     @PostMapping("/momo/ipn")
     public ResponseEntity<Void> momoIpn(@RequestBody MomoIpnRequest request) {
         paymentService.handleMomoIpn(request);

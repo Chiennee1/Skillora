@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.skillora_platform.course.entity.Course;
 import com.example.skillora_platform.course.service.CoursePermissionService;
+import com.example.skillora_platform.course.service.LessonService;
 import com.example.skillora_platform.enrollment.entity.Enrollment;
 import com.example.skillora_platform.enrollment.service.LearningAccessService;
 import com.example.skillora_platform.exception.BusinessException;
@@ -24,6 +25,7 @@ public class QuizHistoryService {
 
     private final QuizService quizService;
     private final CoursePermissionService permissionService;
+    private final LessonService lessonService;
     private final LearningAccessService learningAccessService;
     private final QuizAttemptRepository quizAttemptRepository;
 
@@ -32,6 +34,9 @@ public class QuizHistoryService {
         User actor = permissionService.requireActor(actorEmail);
         Quiz quiz = quizService.findQuizWithLesson(quizId);
         Course course = quiz.getLesson().getSection().getCourse();
+        if (!lessonService.isPublishedLearningContent(quiz.getLesson())) {
+            throw new BusinessException("Enrollment required to view quiz attempts", HttpStatus.FORBIDDEN);
+        }
         Enrollment enrollment = learningAccessService.getActiveEnrollment(actor.getId(), course.getId());
         if (enrollment == null) {
             throw new BusinessException("Enrollment required to view quiz attempts", HttpStatus.FORBIDDEN);

@@ -12,6 +12,7 @@ import com.example.skillora_platform.admin.dto.AdminCouponResponse;
 import com.example.skillora_platform.admin.dto.AdminCouponUpdateRequest;
 import com.example.skillora_platform.commerce.entity.Coupon;
 import com.example.skillora_platform.commerce.repository.CouponRepository;
+import com.example.skillora_platform.common.Constants;
 import com.example.skillora_platform.common.PageResponse;
 import com.example.skillora_platform.exception.BusinessException;
 import com.example.skillora_platform.exception.ResourceNotFoundException;
@@ -29,8 +30,10 @@ public class AdminCouponService {
 
     @Transactional(readOnly = true)
     public PageResponse<AdminCouponResponse> listCoupons(int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), Constants.MAX_PAGE_SIZE);
         Page<AdminCouponResponse> result = couponRepository.findAll(
-                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))
+                        PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt")))
                 .map(this::toResponse);
         return PageResponse.from(result);
     }

@@ -86,8 +86,8 @@ public class LessonService {
             return toResponse(lesson, true);
         }
 
-        // Enrolled students can view all published lessons
-        if (learningAccessService.hasActiveEnrollment(actor.getId(), course.getId())) {
+        if (isPublishedLearningContent(lesson)
+                && learningAccessService.hasActiveEnrollment(actor.getId(), course.getId())) {
             return toResponse(lesson, true);
         }
 
@@ -202,14 +202,20 @@ public class LessonService {
                 .build();
     }
 
-    private boolean isPublicPreviewLesson(Lesson lesson) {
+    public boolean isPublishedLearningContent(Lesson lesson) {
         Section section = lesson.getSection();
         Course course = section.getCourse();
-        return lesson.isPreview()
+        return lesson.getDeletedAt() == null
                 && lesson.isPublished()
+                && section.getDeletedAt() == null
                 && section.isPublished()
-                && course.getStatus() == CourseStatus.PUBLISHED
-                && course.getDeletedAt() == null;
+                && course.getDeletedAt() == null
+                && course.getStatus() == CourseStatus.PUBLISHED;
+    }
+
+    private boolean isPublicPreviewLesson(Lesson lesson) {
+        return lesson.isPreview()
+                && isPublishedLearningContent(lesson);
     }
 
     private LessonResource findResource(Long id) {

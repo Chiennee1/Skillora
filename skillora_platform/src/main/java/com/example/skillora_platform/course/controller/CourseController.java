@@ -100,7 +100,7 @@ public class CourseController {
     @PatchMapping("/{id}/publish")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
     public ApiResponse<CourseResponse> publish(@PathVariable("id") Long id, @AuthenticationPrincipal Jwt jwt) {
-        return ApiResponse.success("Course published successfully", courseService.publish(id, jwt.getSubject()));
+        return ApiResponse.success("Course submitted for review", courseService.publish(id, jwt.getSubject()));
     }
 
     @PatchMapping("/{id}/archive")

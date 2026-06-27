@@ -188,12 +188,11 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.PENDING) {
             return;
         }
-        order.setStatus(OrderStatus.FAILED);
         order.setFailureReason(reason);
         orderRepository.save(order);
         eventPublisher.publishEvent(new PaymentFailedEvent(order.getId(), paymentTransactionId, reason));
 
-        log.info("Order {} marked as failed by payment gateway: {}", order.getId(), reason);
+        log.info("Payment attempt failed for order {}, keeping order pending: {}", order.getId(), reason);
     }
 
     private void validateCart(User actor, Cart cart) {
@@ -249,6 +248,11 @@ public class OrderService {
     private void createEnrollments(Order order, User actor, LocalDateTime now) {
         for (OrderItem item : order.getItems()) {
             Course course = item.getCourse();
+            if (enrollmentRepository.existsByUserIdAndCourseId(actor.getId(), course.getId())) {
+                log.info("Enrollment already exists for user {} and course {}, skipping duplicate",
+                        actor.getId(), course.getId());
+                continue;
+            }
             Enrollment enrollment = Enrollment.builder()
                     .user(actor)
                     .course(course)

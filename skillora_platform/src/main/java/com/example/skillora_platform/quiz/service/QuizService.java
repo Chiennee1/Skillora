@@ -166,7 +166,8 @@ public class QuizService {
         if (permissionService.canManage(course, actor)) {
             return true;
         }
-        if (learningAccessService.hasActiveEnrollment(actor.getId(), course.getId())) {
+        if (lessonService.isPublishedLearningContent(quiz.getLesson())
+                && learningAccessService.hasActiveEnrollment(actor.getId(), course.getId())) {
             return false;
         }
         throw new BusinessException("Enrollment required to access this quiz", HttpStatus.FORBIDDEN);
@@ -273,7 +274,7 @@ public class QuizService {
                 .type(question.getType())
                 .points(question.getPoints())
                 .orderIndex(question.getOrderIndex())
-                .explanation(question.getExplanation())
+                .explanation(includeCorrect ? question.getExplanation() : null)
                 .answerOptions(options)
                 .build();
     }
