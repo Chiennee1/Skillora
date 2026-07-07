@@ -90,6 +90,25 @@ class AuthIntegrationTest {
     }
 
     @Test
+    void testBcrypt() {
+        System.out.println("--- BCRYPT TEST START ---");
+        String hash = "$2b$10$1aQv5v5DF6/2cWolDDpYyuS2s0aHJU.CWy28yBDDaltVpLGG2W1nC";
+        System.out.println("Encoded Password@123: " + passwordEncoder.encode("Password@123"));
+        System.out.println("Encoded Skillora@12345: " + passwordEncoder.encode("Skillora@12345"));
+        
+        String[] candidates = {
+            "Password@123", "Skillora@12345", "admin", "admin@123", "password", "Password", "123456", 
+            "admin123", "Skillora@123", "Password@12345", "skillora", "Skillora", "password123", "12345678"
+        };
+        for (String candidate : candidates) {
+            if (passwordEncoder.matches(candidate, hash)) {
+                System.out.println(">>> MATCH FOUND: " + candidate);
+            }
+        }
+        System.out.println("--- BCRYPT TEST END ---");
+    }
+
+    @Test
     void shouldRegisterStudent() throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

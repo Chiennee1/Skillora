@@ -1,0 +1,11 @@
+ALTER TABLE courses
+    MODIFY currency VARCHAR(3) NOT NULL DEFAULT 'VND';
+
+ALTER TABLE orders
+    MODIFY currency VARCHAR(3) NOT NULL DEFAULT 'VND';
+
+ALTER TABLE payment_transactions
+    MODIFY currency VARCHAR(3) NOT NULL DEFAULT 'VND';
+
+ALTER TABLE reviews
+    MODIFY rating INT NOT NULL;

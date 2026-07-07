@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.skillora_platform.admin.repository.AuditLogRepository;
+import com.example.skillora_platform.assignment.repository.AssignmentRepository;
 import com.example.skillora_platform.course.dto.BunnyVideoCreated;
 import com.example.skillora_platform.course.repository.CategoryRepository;
 import com.example.skillora_platform.course.repository.CourseOutcomeRepository;
@@ -30,6 +31,7 @@ import com.example.skillora_platform.course.repository.LessonVideoRepository;
 import com.example.skillora_platform.course.repository.SectionRepository;
 import com.example.skillora_platform.course.service.BunnyStreamClient;
 import com.example.skillora_platform.notification.repository.NotificationRepository;
+import com.example.skillora_platform.quiz.repository.QuizRepository;
 import com.example.skillora_platform.user.entity.Role;
 import com.example.skillora_platform.user.entity.RoleName;
 import com.example.skillora_platform.user.entity.User;
@@ -122,6 +124,12 @@ class CourseIntegrationTest {
 
     @Autowired
     private LessonResourceRepository lessonResourceRepository;
+
+    @Autowired
+    private QuizRepository quizRepository;
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
 
     @Autowired
     private NotificationRepository notificationRepository;
@@ -314,6 +322,54 @@ class CourseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.totalLessons").value(1))
                 .andExpect(jsonPath("$.data.totalDurationSeconds").value(900));
+    }
+
+    @Test
+    void shouldExposePracticeIdsInLessonSummaries() throws Exception {
+        Long categoryId = createCategory("Backend", adminToken);
+        Long courseId = createCourse("Practice Summary Course", categoryId, instructorToken, status().isCreated())
+                .at("/data/id").asLong();
+        Long sectionId = createSection(courseId, "Practice Module", instructorToken);
+        Long quizLessonId = createLesson(sectionId, "Knowledge Check", "QUIZ", 300, true, instructorToken);
+        Long assignmentLessonId = createLesson(sectionId, "Capstone Task", "ASSIGNMENT", 600, false, instructorToken);
+
+        Long quizId = postJson("/api/v1/quizzes", """
+                {
+                    "lessonId": %d,
+                    "title": "Knowledge Check",
+                    "passScore": 80,
+                    "questions": [
+                        {
+                            "content": "What does Skillora provide?",
+                            "type": "SINGLE",
+                            "points": 10,
+                            "answerOptions": [
+                                { "content": "A learning marketplace", "correct": true },
+                                { "content": "A note-taking app", "correct": false }
+                            ]
+                        }
+                    ]
+                }
+                """.formatted(quizLessonId), instructorToken, status().isCreated())
+                .at("/data/id").asLong();
+        Long assignmentId = postJson("/api/v1/assignments", """
+                {
+                    "lessonId": %d,
+                    "title": "Capstone Task",
+                    "instructions": "Submit your final solution.",
+                    "maxScore": 100,
+                    "dueDays": 7
+                }
+                """.formatted(assignmentLessonId), instructorToken, status().isCreated())
+                .at("/data/id").asLong();
+
+        mockMvc.perform(get("/api/v1/courses/{id}/sections", courseId)
+                        .header("Authorization", bearer(instructorToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].lessons[0].quizId").value(quizId.intValue()))
+                .andExpect(jsonPath("$.data[0].lessons[0].assignmentId").doesNotExist())
+                .andExpect(jsonPath("$.data[0].lessons[1].quizId").doesNotExist())
+                .andExpect(jsonPath("$.data[0].lessons[1].assignmentId").value(assignmentId.intValue()));
     }
 
     @Test
@@ -570,6 +626,8 @@ class CourseIntegrationTest {
         notificationRepository.deleteAll();
         lessonResourceRepository.deleteAll();
         lessonVideoRepository.deleteAll();
+        quizRepository.deleteAll();
+        assignmentRepository.deleteAll();
         lessonRepository.deleteAll();
         sectionRepository.deleteAll();
         courseRequirementRepository.deleteAll();

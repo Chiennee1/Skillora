@@ -39,6 +39,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         properties = {
                 "FRONTEND_URL=https://app.skillora.test",
                 "JWT_SECRET=skillora-prod-test-secret-key-at-least-32-bytes-long",
+                "DB_HOST=localhost",
+                "DB_PASSWORD=test-password",
+                "MAIL_HOST=smtp.skillora.test",
                 "spring.datasource.url=jdbc:h2:mem:skillora_prod_reset;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
                 "spring.datasource.username=sa",
                 "spring.datasource.password=",
@@ -50,8 +53,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "spring.data.redis.repositories.enabled=false",
                 "management.health.redis.enabled=false",
                 "management.health.mail.enabled=false",
+                "management.endpoint.health.validate-group-membership=false",
+                "management.endpoint.health.group.liveness.include=livenessState",
+                "management.endpoint.health.group.readiness.include=readinessState,db",
                 "skillora.security.jwt.secret=skillora-prod-test-secret-key-at-least-32-bytes-long",
                 "skillora.auth.password-reset-url=https://app.skillora.test/reset-password?token={token}",
+                "skillora.payment.enabled=false",
                 "skillora.rate-limit.enabled=false"
         }
 )

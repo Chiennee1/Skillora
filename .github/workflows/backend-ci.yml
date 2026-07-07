@@ -1,4 +1,4 @@
-name: Backend CI
+name: Skillora CI
 
 on:
   push:
@@ -13,8 +13,8 @@ on:
       - develop
 
 jobs:
-  test:
-    name: Test and package
+  backend:
+    name: Backend verify
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,5 +31,71 @@ jobs:
           java-version: "17"
           cache: maven
 
+      - name: Check Docker for Testcontainers
+        run: docker info
+
       - name: Verify
         run: ./mvnw verify
+
+      - name: Assert MySQL schema validation ran
+        run: |
+          REPORT="target/surefire-reports/TEST-com.example.skillora_platform.config.FlywayMySqlSchemaValidationTest.xml"
+          test -f "$REPORT"
+          if grep -q 'skipped="[1-9]' "$REPORT"; then
+            echo "::error::FlywayMySqlSchemaValidationTest was skipped. Docker/Testcontainers schema validation must run in CI."
+            cat "$REPORT"
+            exit 1
+          fi
+          grep -q 'tests="1"' "$REPORT"
+          grep -q 'errors="0"' "$REPORT"
+          grep -q 'failures="0"' "$REPORT"
+
+  frontend:
+    name: Frontend lint, typecheck, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skillora_web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: skillora_web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E smoke
+        run: |
+          cp -r public .next/standalone/public
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+          HOSTNAME=127.0.0.1 PORT=3000 node .next/standalone/server.js > next-e2e.log 2>&1 &
+          APP_PID=$!
+          trap 'kill $APP_PID' EXIT
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3000 > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3000 > /dev/null
+          npm run test:e2e:mock

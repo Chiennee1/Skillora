@@ -208,7 +208,7 @@ class AdminIntegrationTest {
 
         // Verify audit log was created
         assertThat(auditLogRepository.findAll())
-                .anyMatch(log -> log.getAction().equals("CHANGE_STATUS")
+                .anyMatch(log -> log.getAction().equals("BAN_USER")
                         && log.getEntityType().equals("USER")
                         && log.getEntityId().equals(student.getId()));
     }
@@ -400,7 +400,7 @@ class AdminIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.totalElements").value(1))
-                .andExpect(jsonPath("$.data.content[0].action").value("CHANGE_STATUS"))
+                .andExpect(jsonPath("$.data.content[0].action").value("BAN_USER"))
                 .andExpect(jsonPath("$.data.content[0].entityType").value("USER"));
     }
 
