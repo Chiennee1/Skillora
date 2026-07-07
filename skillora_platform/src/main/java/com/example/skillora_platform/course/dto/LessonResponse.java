@@ -17,6 +17,8 @@ public class LessonResponse {
     private Long id;
     private Long sectionId;
     private Long courseId;
+    private Long quizId;
+    private Long assignmentId;
     private String title;
     private String slug;
     private LessonType type;

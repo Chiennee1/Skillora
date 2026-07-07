@@ -16,6 +16,7 @@ import com.example.skillora_platform.config.BunnyStreamProperties;
 import com.example.skillora_platform.course.dto.BunnyVideoCreated;
 import com.example.skillora_platform.course.dto.LessonVideoUploadUrlRequest;
 import com.example.skillora_platform.course.dto.LessonVideoUploadUrlResponse;
+import com.example.skillora_platform.course.entity.CourseStatus;
 import com.example.skillora_platform.course.entity.Lesson;
 import com.example.skillora_platform.course.entity.LessonType;
 import com.example.skillora_platform.course.entity.LessonVideo;
@@ -48,6 +49,12 @@ public class LessonVideoService {
         Lesson lesson = lessonService.findActiveLesson(lessonId);
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
         permissionService.requireOwnerOrAdmin(lesson.getSection().getCourse(), actor);
+        if (lesson.getSection().getCourse().getStatus() == CourseStatus.PUBLISHED
+                && !permissionService.isAdmin(actor)) {
+            throw new BusinessException(
+                    "Published courses must be changed through a course version draft",
+                    HttpStatus.CONFLICT);
+        }
         validateUploadRequest(lesson, request);
         requireSignatureConfig();
 

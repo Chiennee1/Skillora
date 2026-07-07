@@ -72,7 +72,7 @@ public class AdminUserService {
         user.setStatus(request.getStatus());
         userRepository.save(user);
 
-        auditLogService.log(adminEmail, "USER", id, "CHANGE_STATUS",
+        auditLogService.log(adminEmail, "USER", id, auditAction(oldStatus, request.getStatus()),
                 "{\"status\":\"" + oldStatus + "\"}",
                 "{\"status\":\"" + request.getStatus() + "\"}",
                 ipAddress, null);
@@ -81,6 +81,16 @@ public class AdminUserService {
                 adminEmail, id, oldStatus, request.getStatus());
 
         return toResponse(user);
+    }
+
+    private String auditAction(UserStatus oldStatus, UserStatus newStatus) {
+        if (newStatus == UserStatus.BANNED && oldStatus != UserStatus.BANNED) {
+            return "BAN_USER";
+        }
+        if (oldStatus == UserStatus.BANNED && newStatus == UserStatus.ACTIVE) {
+            return "UNBAN_USER";
+        }
+        return "CHANGE_USER_STATUS";
     }
 
     private AdminUserResponse toResponse(User user) {

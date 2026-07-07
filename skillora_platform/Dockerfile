@@ -17,4 +17,10 @@ COPY --from=build /app/target/*.jar app.jar
 USER skillora
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENV TZ=Asia/Ho_Chi_Minh
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError -Duser.timezone=Asia/Ho_Chi_Minh"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=5 \
+  CMD wget -q -O - http://localhost:8080/actuator/health/readiness >/dev/null || exit 1
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

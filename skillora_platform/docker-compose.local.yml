@@ -1,0 +1,50 @@
+# Usage:
+# docker compose --env-file .env.example -f docker-compose.yml -f docker-compose.local.yml up --build
+#
+# Local full-stack UAT: frontend + backend + MySQL + Redis with real seeded data.
+
+services:
+  app:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SKILLORA_SEED_ENABLED: "true"
+      SKILLORA_SEED_PASSWORD: ${SKILLORA_SEED_PASSWORD:-Skillora@12345}
+      CACHE_TYPE: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_HEALTH_ENABLED: "true"
+      MAIL_HEALTH_ENABLED: "false"
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: always
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      PASSWORD_RESET_URL: ${PASSWORD_RESET_URL:-http://localhost:3000/reset-password?token={token}}
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-http://localhost:8080}
+      PAYMENT_RESULT_URL: ${PAYMENT_RESULT_URL:-http://localhost:3000/payment/result}
+      JWT_SECRET: ${JWT_SECRET:-skillora-local-development-secret-32-bytes}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health/readiness || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+
+  frontend:
+    build:
+      context: ../skillora_web
+      dockerfile: Dockerfile
+    container_name: skillora-frontend
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      API_BASE_URL: http://app:8080
+      NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-http://localhost:8080}
+      NEXT_PUBLIC_APP_URL: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped

@@ -73,6 +73,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
         String path = request.getRequestURI();
         String method = request.getMethod();
+        if (HttpMethod.POST.matches(method) && isPasswordResetWrite(path)) {
+            return new RateLimitRule("password-reset", properties.safeResetPasswordLimit());
+        }
         if (HttpMethod.POST.matches(method) && isAuthWrite(path)) {
             return new RateLimitRule("auth", properties.safeAuthLimit());
         }
@@ -90,6 +93,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 || path.equals(Constants.AUTH_API_PREFIX + "/login")
                 || path.equals(Constants.AUTH_API_PREFIX + "/refresh")
                 || path.equals(Constants.AUTH_API_PREFIX + "/forgot-password")
+                || path.equals(Constants.AUTH_API_PREFIX + "/reset-password");
+    }
+
+    private boolean isPasswordResetWrite(String path) {
+        return path.equals(Constants.AUTH_API_PREFIX + "/forgot-password")
                 || path.equals(Constants.AUTH_API_PREFIX + "/reset-password");
     }
 

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.skillora_platform.common.SlugUtils;
+import com.example.skillora_platform.assignment.repository.AssignmentRepository;
 import com.example.skillora_platform.enrollment.service.LearningAccessService;
 import com.example.skillora_platform.course.dto.LessonCreateRequest;
 import com.example.skillora_platform.course.dto.LessonResourceCreateRequest;
@@ -28,6 +29,7 @@ import com.example.skillora_platform.course.repository.LessonRepository;
 import com.example.skillora_platform.course.repository.LessonResourceRepository;
 import com.example.skillora_platform.exception.BusinessException;
 import com.example.skillora_platform.exception.ResourceNotFoundException;
+import com.example.skillora_platform.quiz.repository.QuizRepository;
 import com.example.skillora_platform.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
@@ -42,12 +44,15 @@ public class LessonService {
     private final LearningAccessService learningAccessService;
     private final LessonRepository lessonRepository;
     private final LessonResourceRepository lessonResourceRepository;
+    private final QuizRepository quizRepository;
+    private final AssignmentRepository assignmentRepository;
 
     @Transactional
     public LessonResponse create(Long sectionId, LessonCreateRequest request, String actorEmail) {
         Section section = sectionService.findActiveSection(sectionId);
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
         permissionService.requireOwnerOrAdmin(section.getCourse(), actor);
+        requireVersionFlowForPublishedCourse(section.getCourse(), actor);
         int orderIndex = defaultInt(request.getOrderIndex());
         ensureUniqueOrder(sectionId, orderIndex, null);
 
@@ -100,6 +105,7 @@ public class LessonService {
         Course course = lesson.getSection().getCourse();
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
         permissionService.requireOwnerOrAdmin(course, actor);
+        requireVersionFlowForPublishedCourse(course, actor);
         int orderIndex = defaultInt(request.getOrderIndex());
         ensureUniqueOrder(lesson.getSection().getId(), orderIndex, id);
 
@@ -122,6 +128,7 @@ public class LessonService {
         Course course = lesson.getSection().getCourse();
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
         permissionService.requireOwnerOrAdmin(course, actor);
+        requireVersionFlowForPublishedCourse(course, actor);
 
         lesson.setDeletedAt(LocalDateTime.now());
         lessonRepository.save(lesson);
@@ -137,6 +144,7 @@ public class LessonService {
         Lesson lesson = findActiveLesson(lessonId);
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
         permissionService.requireOwnerOrAdmin(lesson.getSection().getCourse(), actor);
+        requireVersionFlowForPublishedCourse(lesson.getSection().getCourse(), actor);
 
         LessonResource resource = LessonResource.builder()
                 .lesson(lesson)
@@ -158,6 +166,7 @@ public class LessonService {
         LessonResource resource = findResource(id);
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
         permissionService.requireOwnerOrAdmin(resource.getLesson().getSection().getCourse(), actor);
+        requireVersionFlowForPublishedCourse(resource.getLesson().getSection().getCourse(), actor);
 
         resource.setName(request.getName().trim());
         resource.setFileUrl(request.getFileUrl().trim());
@@ -172,6 +181,7 @@ public class LessonService {
         LessonResource resource = findResource(id);
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
         permissionService.requireOwnerOrAdmin(resource.getLesson().getSection().getCourse(), actor);
+        requireVersionFlowForPublishedCourse(resource.getLesson().getSection().getCourse(), actor);
         lessonResourceRepository.delete(resource);
     }
 
@@ -186,6 +196,8 @@ public class LessonService {
                 .id(lesson.getId())
                 .sectionId(lesson.getSection().getId())
                 .courseId(lesson.getSection().getCourse().getId())
+                .quizId(includeProtectedContent ? quizId(lesson.getId()) : null)
+                .assignmentId(includeProtectedContent ? assignmentId(lesson.getId()) : null)
                 .title(lesson.getTitle())
                 .slug(lesson.getSlug())
                 .type(lesson.getType())
@@ -232,6 +244,14 @@ public class LessonService {
         }
     }
 
+    private void requireVersionFlowForPublishedCourse(Course course, User actor) {
+        if (course.getStatus() == CourseStatus.PUBLISHED && !permissionService.isAdmin(actor)) {
+            throw new BusinessException(
+                    "Published courses must be changed through a course version draft",
+                    HttpStatus.CONFLICT);
+        }
+    }
+
     private String generateUniqueLessonSlug(Long sectionId, String source, Long currentId) {
         String baseSlug = SlugUtils.toSlug(source);
         String candidate = baseSlug;
@@ -271,6 +291,18 @@ public class LessonService {
         return lessonResourceRepository.findByLessonIdOrderByOrderIndexAscIdAsc(lessonId).stream()
                 .map(this::toResourceResponse)
                 .toList();
+    }
+
+    private Long quizId(Long lessonId) {
+        return quizRepository.findByLessonId(lessonId)
+                .map(quiz -> quiz.getId())
+                .orElse(null);
+    }
+
+    private Long assignmentId(Long lessonId) {
+        return assignmentRepository.findByLessonId(lessonId)
+                .map(assignment -> assignment.getId())
+                .orElse(null);
     }
 
     private LessonResourceResponse toResourceResponse(LessonResource resource) {

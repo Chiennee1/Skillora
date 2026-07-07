@@ -2,6 +2,7 @@ package com.example.skillora_platform.admin.controller;
 
 import java.time.LocalDateTime;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,8 +28,10 @@ public class AdminAuditLogController {
             @RequestParam(name = "entityType", required = false) String entityType,
             @RequestParam(name = "action", required = false) String action,
             @RequestParam(name = "actorId", required = false) Long actorId,
-            @RequestParam(name = "from", required = false) LocalDateTime from,
-            @RequestParam(name = "to", required = false) LocalDateTime to,
+            @RequestParam(name = "from", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(name = "to", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "" + Constants.DEFAULT_PAGE_SIZE) int size) {
 

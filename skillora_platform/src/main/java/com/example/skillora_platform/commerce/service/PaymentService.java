@@ -176,9 +176,15 @@ public class PaymentService {
             throw new BusinessException("MoMo is not configured", HttpStatus.SERVICE_UNAVAILABLE);
         }
         if (!momoProperties.partnerCode().equals(request.getPartnerCode())) {
+            log.warn("Rejected MoMo IPN with invalid partner code. expected={}, actual={}, orderId={}, requestId={}",
+                    momoProperties.partnerCode(), request.getPartnerCode(), request.getOrderId(),
+                    request.getRequestId());
             throw new BusinessException("Invalid MoMo partner code", HttpStatus.BAD_REQUEST);
         }
         if (!verifyMomoSignature(request)) {
+            log.warn("Rejected MoMo IPN with invalid signature. partnerCode={}, orderId={}, requestId={}, resultCode={}",
+                    request.getPartnerCode(), request.getOrderId(), request.getRequestId(),
+                    request.getResultCode());
             throw new BusinessException("Invalid MoMo signature", HttpStatus.BAD_REQUEST);
         }
 
@@ -216,7 +222,18 @@ public class PaymentService {
         if (params == null || params.isEmpty() || isBlank(params.get("vnp_TxnRef"))) {
             return PaymentCallbackResult.invalid("99", "Input data required", null);
         }
+        if (!vnPayProperties.configured()) {
+            log.warn("Rejected VNPay callback because VNPay is not configured. params={}", redactedParams(params));
+            return PaymentCallbackResult.invalid("99", "VNPay is not configured", null);
+        }
+        String tmnCode = params.get("vnp_TmnCode");
+        if (isBlank(tmnCode) || !vnPayProperties.tmnCode().equals(tmnCode)) {
+            log.warn("Rejected VNPay callback with invalid terminal code. expected={}, actual={}, params={}",
+                    vnPayProperties.tmnCode(), tmnCode, redactedParams(params));
+            return PaymentCallbackResult.invalid("97", "Invalid terminal code", null);
+        }
         if (!verifyVnPaySignature(params)) {
+            log.warn("Rejected VNPay callback with invalid signature. params={}", redactedParams(params));
             return PaymentCallbackResult.invalid("97", "Invalid signature", null);
         }
 
@@ -448,6 +465,13 @@ public class PaymentService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private Map<String, String> redactedParams(Map<String, String> params) {
+        Map<String, String> redacted = new TreeMap<>();
+        params.forEach((key, value) -> redacted.put(key,
+                key != null && key.toLowerCase(Locale.ROOT).contains("securehash") ? "[present]" : value));
+        return redacted;
     }
 
     public Map<String, String> signVnPayParamsForTest(Map<String, String> unsignedParams) {

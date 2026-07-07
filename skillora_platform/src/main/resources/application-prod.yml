@@ -21,11 +21,31 @@ spring:
 
 management:
   health:
+    db:
+      enabled: true
     redis:
       enabled: ${REDIS_HEALTH_ENABLED:true}
+    mail:
+      enabled: ${MAIL_HEALTH_ENABLED:true}
+  endpoint:
+    health:
+      validate-group-membership: false
+      probes:
+        enabled: true
+      show-details: when_authorized
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db,redis,mail
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
 
 skillora:
   cors:
+    # Production CORS is intentionally restricted to FRONTEND_URL only.
     allowed-origins:
       - ${FRONTEND_URL}
   security:

@@ -40,6 +40,8 @@ server:
 
 management:
   health:
+    db:
+      enabled: ${DB_HEALTH_ENABLED:true}
     redis:
       enabled: ${REDIS_HEALTH_ENABLED:false}
     mail:
@@ -50,8 +52,14 @@ management:
         include: health,info,prometheus,metrics
   endpoint:
     health:
+      validate-group-membership: false
       probes:
         enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db,redis
   metrics:
     tags:
       application: ${spring.application.name}
@@ -65,11 +73,14 @@ springdoc:
     tags-sorter: alpha
 
 skillora:
+  seed:
+    enabled: ${SKILLORA_SEED_ENABLED:false}
+    password: ${SKILLORA_SEED_PASSWORD:Skillora@12345}
   auth:
-    password-reset-url: ${PASSWORD_RESET_URL:${FRONTEND_URL:http://localhost:5173}/reset-password?token={token}}
+    password-reset-url: ${PASSWORD_RESET_URL:${FRONTEND_URL:http://localhost:3000}/reset-password?token={token}}
   cors:
     allowed-origins:
-      - ${FRONTEND_URL:http://localhost:5173}
+      - ${FRONTEND_URL:http://localhost:3000}
       - http://localhost:3000
     allowed-methods:
       - GET
@@ -92,7 +103,7 @@ skillora:
       access-token-ttl: PT15M
       refresh-token-ttl: P7D
   oauth2:
-    authorized-redirect-uri: ${OAUTH2_AUTHORIZED_REDIRECT_URI:http://localhost:5173/oauth2/redirect}
+    authorized-redirect-uri: ${OAUTH2_AUTHORIZED_REDIRECT_URI:http://localhost:3000/oauth2/redirect}
   video:
     bunny:
       library-id: ${BUNNY_LIBRARY_ID:}
@@ -107,8 +118,13 @@ skillora:
       temperature: ${GEMINI_TEMPERATURE:0.4}
       max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:1024}
   payment:
+    enabled: ${PAYMENT_ENABLED:true}
     public-base-url: ${PUBLIC_API_BASE_URL:http://localhost:8080}
-    result-url: ${PAYMENT_RESULT_URL:${FRONTEND_URL:http://localhost:5173}/payments/result}
+    result-url: ${PAYMENT_RESULT_URL:${FRONTEND_URL:http://localhost:3000}/payment/result}
+    ipn:
+      whitelist-enabled: ${PAYMENT_IPN_WHITELIST_ENABLED:false}
+      vnpay-allowed-ips: ${VNPAY_IPN_ALLOWED_IPS:}
+      momo-allowed-ips: ${MOMO_IPN_ALLOWED_IPS:}
     vnpay:
       tmn-code: ${VNPAY_TMN_CODE:}
       hash-secret: ${VNPAY_HASH_SECRET:}
@@ -127,5 +143,6 @@ skillora:
     enabled: ${RATE_LIMIT_ENABLED:true}
     window: ${RATE_LIMIT_WINDOW:PT1M}
     auth-limit: ${RATE_LIMIT_AUTH:30}
+    reset-password-limit: ${RATE_LIMIT_RESET_PASSWORD:5}
     chat-limit: ${RATE_LIMIT_CHAT:30}
     payment-limit: ${RATE_LIMIT_PAYMENT:120}

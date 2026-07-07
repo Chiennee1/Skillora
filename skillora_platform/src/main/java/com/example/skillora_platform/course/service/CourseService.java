@@ -145,6 +145,7 @@ public class CourseService {
         Course course = findActiveCourse(id);
         User actor = permissionService.requireInstructorOrAdmin(actorEmail);
         permissionService.requireOwnerOrAdmin(course, actor);
+        requireVersionFlowForPublishedCourse(course, actor);
         validatePricing(request.getPrice(), request.getDiscountPrice());
 
         course.setTitle(request.getTitle().trim());
@@ -245,6 +246,14 @@ public class CourseService {
             throw new BusinessException("Instructor user must have INSTRUCTOR or ADMIN role", HttpStatus.BAD_REQUEST);
         }
         return instructor;
+    }
+
+    private void requireVersionFlowForPublishedCourse(Course course, User actor) {
+        if (course.getStatus() == CourseStatus.PUBLISHED && !permissionService.isAdmin(actor)) {
+            throw new BusinessException(
+                    "Published courses must be changed through a course version draft",
+                    HttpStatus.CONFLICT);
+        }
     }
 
     private void applyRequirements(Course course, List<String> requirements) {

@@ -13,6 +13,8 @@ public class LessonSummaryResponse {
 
     private Long id;
     private Long sectionId;
+    private Long quizId;
+    private Long assignmentId;
     private String title;
     private String slug;
     private LessonType type;

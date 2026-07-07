@@ -28,4 +28,6 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
     long countByDeletedAtIsNull();
 
     Page<Course> findByDeletedAtIsNull(Pageable pageable);
+
+    Page<Course> findByStatusAndDeletedAtIsNull(CourseStatus status, Pageable pageable);
 }

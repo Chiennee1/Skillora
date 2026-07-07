@@ -1,0 +1,98 @@
+# Usage: docker compose --env-file .env.staging -f docker-compose.yml -f docker-compose.staging.yml up -d
+# Staging points the app at external MySQL/SMTP/payment sandbox credentials from .env.staging.
+# The base mysql service may still start for local smoke tests; app DB_HOST is overridden below.
+
+services:
+  mysql:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  app:
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    environment:
+      SPRING_PROFILES_ACTIVE: staging
+      DB_HOST: ${STAGING_DB_HOST:?STAGING_DB_HOST is required}
+      DB_PORT: ${STAGING_DB_PORT:-3306}
+      DB_NAME: ${STAGING_DB_NAME:?STAGING_DB_NAME is required}
+      DB_USERNAME: ${STAGING_DB_USERNAME:?STAGING_DB_USERNAME is required}
+      DB_PASSWORD: ${STAGING_DB_PASSWORD:?STAGING_DB_PASSWORD is required}
+      FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL is required}
+      PASSWORD_RESET_URL: ${PASSWORD_RESET_URL:?PASSWORD_RESET_URL is required}
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:?PUBLIC_API_BASE_URL is required}
+      PAYMENT_RESULT_URL: ${PAYMENT_RESULT_URL:?PAYMENT_RESULT_URL is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required and must be at least 32 characters}
+      MAIL_HOST: ${MAIL_HOST:?MAIL_HOST is required}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:?MAIL_USERNAME is required}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?MAIL_PASSWORD is required}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
+      MAIL_SMTP_STARTTLS_ENABLE: ${MAIL_SMTP_STARTTLS_ENABLE:-true}
+      VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:?VNPAY_TMN_CODE is required}
+      VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:?VNPAY_HASH_SECRET is required}
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:?MOMO_PARTNER_CODE is required}
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY:?MOMO_ACCESS_KEY is required}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY:?MOMO_SECRET_KEY is required}
+      PAYMENT_IPN_WHITELIST_ENABLED: ${PAYMENT_IPN_WHITELIST_ENABLED:-false}
+      VNPAY_IPN_ALLOWED_IPS: ${VNPAY_IPN_ALLOWED_IPS:-}
+      MOMO_IPN_ALLOWED_IPS: ${MOMO_IPN_ALLOWED_IPS:-}
+      JAVA_OPTS: >-
+        -XX:MaxRAMPercentage=75
+        -XX:+UseG1GC
+        -XX:+ExitOnOutOfMemoryError
+        -Duser.timezone=Asia/Ho_Chi_Minh
+      MAIL_HEALTH_ENABLED: "true"
+      REDIS_HEALTH_ENABLED: "true"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ../skillora_web
+      dockerfile: Dockerfile
+    container_name: skillora-frontend
+    environment:
+      API_BASE_URL: http://app:8080
+      NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:?PUBLIC_API_BASE_URL is required}
+      NEXT_PUBLIC_APP_URL: ${FRONTEND_URL:?FRONTEND_URL is required}
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: skillora-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - app
+      - frontend
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: skillora-mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    profiles:
+      - mail-debug

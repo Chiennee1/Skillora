@@ -11,11 +11,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.skillora_platform.admin.dto.AdminCourseResponse;
+import com.example.skillora_platform.admin.dto.AdminCourseDetailResponse;
 import com.example.skillora_platform.common.Constants;
 import com.example.skillora_platform.common.PageResponse;
+import com.example.skillora_platform.course.dto.CourseResponse;
+import com.example.skillora_platform.course.dto.CourseVersionResponse;
 import com.example.skillora_platform.course.entity.Course;
 import com.example.skillora_platform.course.entity.CourseStatus;
 import com.example.skillora_platform.course.repository.CourseRepository;
+import com.example.skillora_platform.course.service.CourseService;
+import com.example.skillora_platform.course.service.SectionService;
+import com.example.skillora_platform.course.service.CourseVersionService;
 import com.example.skillora_platform.exception.BusinessException;
 import com.example.skillora_platform.exception.ResourceNotFoundException;
 
@@ -28,16 +34,58 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminCourseService {
 
     private final CourseRepository courseRepository;
+    private final CourseService courseService;
+    private final SectionService sectionService;
+    private final CourseVersionService courseVersionService;
     private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
-    public PageResponse<AdminCourseResponse> listCourses(int page, int size) {
+    public PageResponse<AdminCourseResponse> listCourses(String status, int page, int size) {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), Constants.MAX_PAGE_SIZE);
-        Page<AdminCourseResponse> result = courseRepository.findByDeletedAtIsNull(
-                        PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt")))
+        CourseStatus parsedStatus = parseStatus(status);
+        PageRequest pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Course> coursePage = parsedStatus == null
+                ? courseRepository.findByDeletedAtIsNull(pageable)
+                : courseRepository.findByStatusAndDeletedAtIsNull(parsedStatus, pageable);
+        Page<AdminCourseResponse> result = coursePage
                 .map(this::toResponse);
         return PageResponse.from(result);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminCourseDetailResponse getCourseDetail(Long id, String adminEmail) {
+        CourseResponse course = courseService.getByIdOrSlug(id.toString(), adminEmail);
+        return AdminCourseDetailResponse.builder()
+                .course(course)
+                .sections(sectionService.listByCourse(id, adminEmail))
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CourseVersionResponse> listPendingVersionReviews(String adminEmail, int page, int size) {
+        return courseVersionService.listPendingReviews(adminEmail, page, size);
+    }
+
+    @Transactional
+    public CourseVersionResponse approveVersion(
+            Long courseId,
+            Long versionId,
+            String adminEmail,
+            String ipAddress
+    ) {
+        return courseVersionService.approveVersion(courseId, versionId, adminEmail, ipAddress);
+    }
+
+    @Transactional
+    public CourseVersionResponse rejectVersion(
+            Long courseId,
+            Long versionId,
+            String reason,
+            String adminEmail,
+            String ipAddress
+    ) {
+        return courseVersionService.rejectVersion(courseId, versionId, reason, adminEmail, ipAddress);
     }
 
     @Transactional
@@ -101,6 +149,17 @@ public class AdminCourseService {
 
         log.info("Admin {} rejected course {} with reason: {}", adminEmail, id, cleanReason);
         return toResponse(course);
+    }
+
+    private CourseStatus parseStatus(String status) {
+        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
+            return null;
+        }
+        try {
+            return CourseStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException("Invalid course status filter: " + status, HttpStatus.BAD_REQUEST);
+        }
     }
 
     private AdminCourseResponse toResponse(Course course) {

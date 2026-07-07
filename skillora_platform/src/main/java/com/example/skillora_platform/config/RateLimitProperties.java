@@ -9,6 +9,7 @@ public record RateLimitProperties(
         boolean enabled,
         Duration window,
         int authLimit,
+        int resetPasswordLimit,
         int chatLimit,
         int paymentLimit
 ) {
@@ -22,6 +23,10 @@ public record RateLimitProperties(
 
     public int safeAuthLimit() {
         return authLimit <= 0 ? 30 : authLimit;
+    }
+
+    public int safeResetPasswordLimit() {
+        return resetPasswordLimit <= 0 ? 5 : resetPasswordLimit;
     }
 
     public int safeChatLimit() {

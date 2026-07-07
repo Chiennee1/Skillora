@@ -106,6 +106,9 @@ public class Course extends BaseEntity {
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
 
+    @Column(name = "current_version")
+    private Integer currentVersion;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
