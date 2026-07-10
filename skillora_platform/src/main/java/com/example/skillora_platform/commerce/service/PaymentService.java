@@ -63,6 +63,7 @@ public class PaymentService {
 
     @Transactional
     public PaymentCreateResponse createVnPayPayment(Long orderId, String actorEmail, String clientIp) {
+        ensurePaymentEnabled();
         if (!vnPayProperties.configured()) {
             throw new BusinessException("VNPay is not configured", HttpStatus.SERVICE_UNAVAILABLE);
         }
@@ -97,6 +98,7 @@ public class PaymentService {
 
     @Transactional
     public PaymentCreateResponse createMomoPayment(Long orderId, String actorEmail) {
+        ensurePaymentEnabled();
         if (!momoProperties.configured()) {
             throw new BusinessException("MoMo is not configured", HttpStatus.SERVICE_UNAVAILABLE);
         }
@@ -280,6 +282,12 @@ public class PaymentService {
                 .status(TxStatus.PENDING)
                 .build();
         return paymentTransactionRepository.saveAndFlush(tx);
+    }
+
+    private void ensurePaymentEnabled() {
+        if (!paymentProperties.enabled()) {
+            throw new BusinessException("Payment is disabled", HttpStatus.SERVICE_UNAVAILABLE);
+        }
     }
 
     private Order requirePayableOrder(Long orderId, String actorEmail) {

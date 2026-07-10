@@ -63,6 +63,7 @@ export type Category = {
 export type CourseLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "ALL_LEVELS";
 export type CourseStatus = "DRAFT" | "REVIEWING" | "PUBLISHED" | "REJECTED" | "ARCHIVED";
 export type CourseVersionStatus = "DRAFT" | "REVIEWING" | "APPROVED" | "REJECTED";
+export type VideoStatus = "UPLOADING" | "PROCESSING" | "READY" | "FAILED" | string;
 
 export type CourseSummary = {
   id: number;
@@ -122,6 +123,8 @@ export type LessonSummary = {
   position?: number;
   preview?: boolean;
   published?: boolean;
+  hasVideo?: boolean;
+  videoStatus?: VideoStatus | null;
 };
 
 export type Lesson = LessonSummary & {
@@ -129,11 +132,28 @@ export type Lesson = LessonSummary & {
   courseId?: number;
   slug?: string;
   content?: string | null;
-  video?: { playbackUrl?: string | null; embedUrl?: string | null; status?: string; [key: string]: unknown } | null;
+  video?: LessonVideo | null;
   videoUrl?: string | null;
   resources?: LessonResource[];
   quizId?: number | null;
   assignmentId?: number | null;
+};
+
+export type LessonVideo = {
+  id?: number;
+  provider?: string;
+  assetId?: string | null;
+  playbackUrl?: string | null;
+  embedUrl?: string | null;
+  hlsUrl?: string | null;
+  thumbnailUrl?: string | null;
+  durationSeconds?: number;
+  sizeBytes?: number | null;
+  mimeType?: string | null;
+  status?: VideoStatus | null;
+  errorMessage?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type LessonResource = {

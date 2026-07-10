@@ -18,6 +18,7 @@ public class LessonVideoResponse {
     private VideoProvider provider;
     private String assetId;
     private String playbackUrl;
+    private String embedUrl;
     private String hlsUrl;
     private String thumbnailUrl;
     private int durationSeconds;

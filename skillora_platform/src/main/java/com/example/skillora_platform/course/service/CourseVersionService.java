@@ -59,6 +59,7 @@ public class CourseVersionService {
     private final LessonRepository lessonRepository;
     private final LessonResourceRepository lessonResourceRepository;
     private final CoursePermissionService permissionService;
+    private final CoursePublishingReadinessService publishingReadinessService;
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper;
 
@@ -159,6 +160,7 @@ public class CourseVersionService {
         if (version.getStatus() != CourseVersionStatus.DRAFT) {
             throw new BusinessException("Only DRAFT versions can be submitted for review", HttpStatus.CONFLICT);
         }
+        publishingReadinessService.requirePublishedVideoLessonsReady(version.getCourse().getId());
 
         version.setStatus(CourseVersionStatus.REVIEWING);
         version.setRejectReason(null);

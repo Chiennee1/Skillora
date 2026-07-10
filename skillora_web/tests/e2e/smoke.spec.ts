@@ -185,6 +185,11 @@ test.beforeEach(async ({ context }) => {
             preview: false,
             published: true,
             orderIndex: 0,
+            video: {
+              status: "READY",
+              embedUrl: `${baseUrl}/player/bunny/video-guid-123?token=signed&expires=9999999999`,
+              playbackUrl: null,
+            },
             resources: [
               {
                 id: 88,
@@ -196,6 +201,52 @@ test.beforeEach(async ({ context }) => {
                 orderIndex: 0,
               },
             ],
+          },
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/backend/lessons/43") {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            id: 43,
+            sectionId: 501,
+            courseId: 101,
+            title: "Processing Video",
+            type: "VIDEO",
+            durationSeconds: 900,
+            preview: false,
+            published: true,
+            orderIndex: 1,
+            video: { status: "PROCESSING" },
+            resources: [],
+          },
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/backend/lessons/44") {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            id: 44,
+            sectionId: 501,
+            courseId: 101,
+            title: "Failed Video",
+            type: "VIDEO",
+            durationSeconds: 900,
+            preview: false,
+            published: true,
+            orderIndex: 2,
+            video: { status: "FAILED", errorMessage: "Encoder failed" },
+            resources: [],
           },
         }),
       });
@@ -234,6 +285,63 @@ test.beforeEach(async ({ context }) => {
             failureReason: "Gateway rejected the attempt",
             createdAt: "2026-07-05T08:00:00Z",
             items: [{ courseId: 101, courseTitleSnapshot: "Spring Boot Production Course", finalPrice: 890000 }],
+          },
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/backend/orders/88") {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            id: 88,
+            status: "PAID",
+            totalAmount: 890000,
+            currency: "VND",
+            paidAt: "2026-07-05T08:30:00Z",
+            createdAt: "2026-07-05T08:00:00Z",
+            items: [{ courseId: 101, courseTitleSnapshot: "Spring Boot Production Course", finalPrice: 890000 }],
+          },
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/backend/payments/vnpay/create") {
+      const body = route.request().postDataJSON() as { orderId?: number } | null;
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            orderId: body?.orderId ?? 77,
+            paymentTransactionId: 7001,
+            gateway: "VNPAY",
+            amount: 890000,
+            currency: "VND",
+            payUrl: `${baseUrl}/gateway/vnpay?orderId=${body?.orderId ?? 77}`,
+          },
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/backend/payments/momo/create") {
+      const body = route.request().postDataJSON() as { orderId?: number } | null;
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            orderId: body?.orderId ?? 77,
+            paymentTransactionId: 7002,
+            gateway: "MOMO",
+            amount: 890000,
+            currency: "VND",
+            payUrl: `${baseUrl}/gateway/momo?orderId=${body?.orderId ?? 77}`,
           },
         }),
       });
@@ -335,15 +443,62 @@ test("payment result explains retryable pending orders", async ({ page }) => {
   await expect(page.getByRole("link", { name: "View Order" })).toHaveAttribute("href", "/orders/77");
 });
 
+test("order detail redirects to selected gateway pay URLs", async ({ context, page }) => {
+  await context.addCookies([sessionCookie(["STUDENT"])]);
+
+  await page.goto("/orders/77");
+  await page.getByRole("button", { name: "Pay with VNPay" }).click();
+  await expect(page).toHaveURL(`${baseUrl}/gateway/vnpay?orderId=77`);
+
+  await page.goto("/orders/77");
+  await page.getByRole("button", { name: "Pay with MoMo" }).click();
+  await expect(page).toHaveURL(`${baseUrl}/gateway/momo?orderId=77`);
+});
+
+test("payment result confirms paid orders", async ({ page }) => {
+  await page.goto("/payment/result?gateway=MOMO&orderId=88&status=PAID&code=0");
+
+  await expect(page.getByRole("heading", { name: "Payment Successful" })).toBeVisible();
+  await expect(page.getByText("Your enrollment is confirmed!")).toBeVisible();
+  await expect(page.getByText("Order Reference: #88")).toBeVisible();
+  await expect(page.getByRole("link", { name: "View Order" })).toHaveAttribute("href", "/orders/88");
+});
+
+test("payment result handles missing order id without retry controls", async ({ page }) => {
+  await page.goto("/payment/result");
+
+  await expect(page.getByRole("heading", { name: "Pending Gateway Confirmation" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Retry/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "View Order" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "My Dashboard" })).toHaveAttribute("href", "/dashboard");
+});
+
 test("lesson page renders backend-shaped resources", async ({ context, page }) => {
   await context.addCookies([sessionCookie(["STUDENT"])]);
 
   await page.goto("/learn/55/lessons/42");
 
   await expect(page.getByRole("heading", { name: "Capstone Task" })).toBeVisible();
+  await expect(page.locator('iframe[title="Capstone Task"]')).toHaveAttribute(
+    "src",
+    `${baseUrl}/player/bunny/video-guid-123?token=signed&expires=9999999999`,
+  );
   const resource = page.getByRole("link", { name: /Starter ZIP/ });
   await expect(resource).toBeVisible();
   await expect(resource).toHaveAttribute("href", "https://cdn.skillora.test/starter.zip");
+});
+
+test("lesson page explains video processing and failed states", async ({ context, page }) => {
+  await context.addCookies([sessionCookie(["STUDENT"])]);
+
+  await page.goto("/learn/55/lessons/43");
+  await expect(page.getByRole("heading", { name: "Processing Video" })).toBeVisible();
+  await expect(page.getByText("Video is processing")).toBeVisible();
+
+  await page.goto("/learn/55/lessons/44");
+  await expect(page.getByRole("heading", { name: "Failed Video" })).toBeVisible();
+  await expect(page.getByText("Video processing failed")).toBeVisible();
+  await expect(page.getByText("Encoder failed")).toBeVisible();
 });
 
 test("grading queue discovers assignments from lesson summaries", async ({ context, page }) => {
@@ -385,10 +540,34 @@ test("course builder sends file metadata when preparing video upload", async ({ 
                 orderIndex: 0,
                 preview: false,
                 published: true,
+                hasVideo: false,
+                videoStatus: null,
               },
             ],
           },
         ],
+      }),
+    });
+  });
+  await page.route("**/api/backend/lessons/42", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          id: 42,
+          sectionId: 501,
+          courseId: 101,
+          title: "Upload Lesson",
+          type: "VIDEO",
+          content: "Upload a lesson video.",
+          durationSeconds: 900,
+          preview: false,
+          published: true,
+          orderIndex: 0,
+          video: { status: "UPLOADING" },
+          resources: [],
+        },
       }),
     });
   });
@@ -449,6 +628,8 @@ test("course builder sends file metadata when preparing video upload", async ({ 
   });
 
   await page.goto("/instructor/courses/101");
+  await expect(page.getByText("Video lessons ready")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Submit Review" })).toBeDisabled();
   await page.locator("#lesson-video-file-42").setInputFiles({
     name: "lesson.mp4",
     mimeType: "video/mp4",
@@ -456,11 +637,12 @@ test("course builder sends file metadata when preparing video upload", async ({ 
   });
   await page.getByRole("button", { name: "Upload Video" }).click();
 
-  expect(uploadBody).toEqual({
+  await expect.poll(() => uploadBody).toEqual({
     fileName: "lesson.mp4",
     mimeType: "video/mp4",
     fileSizeBytes: 5,
   });
+  await expect(page.getByText("Processing", { exact: true })).toBeVisible();
 });
 
 test("chat workspace renders PageResponse conversations and appends assistant replies", async ({ context, page }) => {

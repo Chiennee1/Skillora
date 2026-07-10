@@ -20,6 +20,7 @@ import com.example.skillora_platform.course.entity.Course;
 import com.example.skillora_platform.course.entity.CourseStatus;
 import com.example.skillora_platform.course.repository.CourseRepository;
 import com.example.skillora_platform.course.service.CourseService;
+import com.example.skillora_platform.course.service.CoursePublishingReadinessService;
 import com.example.skillora_platform.course.service.SectionService;
 import com.example.skillora_platform.course.service.CourseVersionService;
 import com.example.skillora_platform.exception.BusinessException;
@@ -37,6 +38,7 @@ public class AdminCourseService {
     private final CourseService courseService;
     private final SectionService sectionService;
     private final CourseVersionService courseVersionService;
+    private final CoursePublishingReadinessService publishingReadinessService;
     private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
@@ -102,6 +104,7 @@ public class AdminCourseService {
                     "Only courses in REVIEWING status can be approved, current: " + course.getStatus(),
                     HttpStatus.CONFLICT);
         }
+        publishingReadinessService.requirePublishedVideoLessonsReady(course.getId());
 
         CourseStatus oldStatus = course.getStatus();
         course.setStatus(CourseStatus.PUBLISHED);

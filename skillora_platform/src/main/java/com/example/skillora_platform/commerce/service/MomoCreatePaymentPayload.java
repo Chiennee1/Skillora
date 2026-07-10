@@ -2,7 +2,7 @@ package com.example.skillora_platform.commerce.service;
 
 public record MomoCreatePaymentPayload(
         String partnerCode,
-        String partnerName,
+        String storeName,
         String storeId,
         String requestId,
         Long amount,

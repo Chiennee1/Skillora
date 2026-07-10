@@ -14,7 +14,7 @@ public record MomoProperties(
 ) {
 
     private static final String DEFAULT_ENDPOINT = "https://test-payment.momo.vn/v2/gateway/api/create";
-    private static final String DEFAULT_REQUEST_TYPE = "payWithMethod";
+    private static final String DEFAULT_REQUEST_TYPE = "captureWallet";
     private static final String DEFAULT_PARTNER_NAME = "Skillora";
     private static final String DEFAULT_STORE_ID = "SkilloraStore";
 

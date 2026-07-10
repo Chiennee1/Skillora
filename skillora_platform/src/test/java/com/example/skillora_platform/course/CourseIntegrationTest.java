@@ -1,7 +1,12 @@
 package com.example.skillora_platform.course;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HexFormat;
 import java.util.HashSet;
 import java.util.Set;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +50,7 @@ import com.example.skillora_platform.user.repository.UserRepository;
 import com.example.skillora_platform.user.service.JwtService;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.blankOrNullString;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -62,7 +68,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         properties = {
                 "skillora.video.bunny.library-id=12345",
                 "skillora.video.bunny.api-key=test-secret",
-                "skillora.video.bunny.upload-expiration=PT2H"
+                "skillora.video.bunny.upload-expiration=PT2H",
+                "skillora.video.bunny.webhook-signing-secret=webhook-secret",
+                "skillora.video.bunny.token-security-key=token-secret",
+                "skillora.video.bunny.pull-zone-host=videos.skillora.test",
+                "skillora.video.bunny.allowed-mime-types=video/mp4,video/webm,video/quicktime",
+                "skillora.video.bunny.max-file-size-bytes=500000"
         }
 )
 @ActiveProfiles("test")
@@ -378,7 +389,7 @@ class CourseIntegrationTest {
         Long courseId = createCourse("Access Course", categoryId, instructorToken, status().isCreated())
                 .at("/data/id").asLong();
         Long sectionId = createSection(courseId, "Access Module", instructorToken);
-        Long previewLessonId = createLesson(sectionId, "Preview", "VIDEO", 300, true, instructorToken);
+        Long previewLessonId = createLesson(sectionId, "Preview", "TEXT", 300, true, instructorToken);
         Long privateLessonId = createLesson(sectionId, "Private", "TEXT", 300, false, instructorToken);
         submitAndApproveCourse(courseId, instructorToken);
 
@@ -484,6 +495,132 @@ class CourseIntegrationTest {
                 .andExpect(jsonPath("$.data.video.assetId").value("video-guid-123"))
                 .andExpect(jsonPath("$.data.video.status").value("UPLOADING"))
                 .andExpect(jsonPath("$.data.video.mimeType").value("video/mp4"));
+
+        mockMvc.perform(get("/api/v1/courses/{id}/sections", courseId)
+                        .header("Authorization", bearer(instructorToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].lessons[0].hasVideo").value(true))
+                .andExpect(jsonPath("$.data[0].lessons[0].videoStatus").value("UPLOADING"));
+    }
+
+    @Test
+    void shouldRejectInvalidBunnyUploadMetadata() throws Exception {
+        Long categoryId = createCategory("Backend", adminToken);
+        Long courseId = createCourse("Invalid Video Course", categoryId, instructorToken, status().isCreated())
+                .at("/data/id").asLong();
+        Long sectionId = createSection(courseId, "Video Module", instructorToken);
+        Long lessonId = createLesson(sectionId, "Upload Lesson", "VIDEO", 300, false, instructorToken);
+
+        mockMvc.perform(post("/api/v1/lessons/{id}/video/upload-url", lessonId)
+                        .header("Authorization", bearer(instructorToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "fileName": "lesson.exe",
+                                    "mimeType": "application/octet-stream",
+                                    "fileSizeBytes": 123
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/v1/lessons/{id}/video/upload-url", lessonId)
+                        .header("Authorization", bearer(instructorToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "fileName": "lesson.mp4",
+                                    "mimeType": "video/mp4",
+                                    "fileSizeBytes": 500001
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldVerifyBunnyWebhookAndExposeSignedEmbedWhenReady() throws Exception {
+        when(bunnyStreamClient.createVideo(anyString())).thenReturn(new BunnyVideoCreated("video-guid-123"));
+        Long categoryId = createCategory("Backend", adminToken);
+        Long courseId = createCourse("Ready Video Course", categoryId, instructorToken, status().isCreated())
+                .at("/data/id").asLong();
+        Long sectionId = createSection(courseId, "Video Module", instructorToken);
+        Long lessonId = createLesson(sectionId, "Upload Lesson", "VIDEO", 300, true, instructorToken);
+
+        postJson("/api/v1/lessons/%d/video/upload-url".formatted(lessonId), uploadJson(),
+                instructorToken, status().isOk());
+
+        postBunnyWebhook("video-guid-123", 3, "12345", status().isOk());
+        postBunnyWebhook("video-guid-123", 3, "12345", status().isOk());
+
+        mockMvc.perform(get("/api/v1/lessons/{id}", lessonId)
+                        .header("Authorization", bearer(instructorToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.video.status").value("READY"))
+                .andExpect(jsonPath("$.data.video.embedUrl", containsString(
+                        "https://player.mediadelivery.net/embed/12345/video-guid-123?token=")))
+                .andExpect(jsonPath("$.data.video.embedUrl", containsString("&expires=")))
+                .andExpect(jsonPath("$.data.video.playbackUrl").doesNotExist())
+                .andExpect(jsonPath("$.data.video.hlsUrl").doesNotExist())
+                .andExpect(jsonPath("$.data.video.thumbnailUrl").value(
+                        "https://videos.skillora.test/video-guid-123/thumbnail.jpg"));
+
+        mockMvc.perform(patch("/api/v1/courses/{id}/publish", courseId)
+                        .header("Authorization", bearer(instructorToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REVIEWING"));
+        mockMvc.perform(patch("/api/v1/admin/courses/{id}/approve", courseId)
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PUBLISHED"));
+
+        mockMvc.perform(get("/api/v1/lessons/{id}", lessonId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.video.embedUrl", containsString("token=")));
+    }
+
+    @Test
+    void shouldRejectInvalidBunnyWebhookAndHandleFailedStatus() throws Exception {
+        when(bunnyStreamClient.createVideo(anyString())).thenReturn(new BunnyVideoCreated("failed-guid"));
+        Long categoryId = createCategory("Backend", adminToken);
+        Long courseId = createCourse("Failed Video Course", categoryId, instructorToken, status().isCreated())
+                .at("/data/id").asLong();
+        Long sectionId = createSection(courseId, "Video Module", instructorToken);
+        Long lessonId = createLesson(sectionId, "Upload Lesson", "VIDEO", 300, false, instructorToken);
+
+        postJson("/api/v1/lessons/%d/video/upload-url".formatted(lessonId), uploadJson(),
+                instructorToken, status().isOk());
+
+        String invalidSignaturePayload = bunnyWebhookJson("failed-guid", 3, "12345");
+        mockMvc.perform(post("/api/v1/videos/bunny/webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-BunnyStream-Signature-Version", "v1")
+                        .header("X-BunnyStream-Signature-Algorithm", "hmac-sha256")
+                        .header("X-BunnyStream-Signature", "invalid")
+                        .content(invalidSignaturePayload))
+                .andExpect(status().isUnauthorized());
+
+        postBunnyWebhook("failed-guid", 3, "99999", status().isBadRequest());
+        postBunnyWebhook("unknown-guid", 3, "12345", status().isOk());
+        postBunnyWebhook("failed-guid", 5, "12345", status().isOk());
+
+        mockMvc.perform(get("/api/v1/lessons/{id}", lessonId)
+                        .header("Authorization", bearer(instructorToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.video.status").value("FAILED"))
+                .andExpect(jsonPath("$.data.video.errorMessage", containsString("status 5")));
+    }
+
+    @Test
+    void shouldBlockCourseReviewUntilPublishedVideoLessonsAreReady() throws Exception {
+        Long categoryId = createCategory("Backend", adminToken);
+        Long courseId = createCourse("Blocked Video Course", categoryId, instructorToken, status().isCreated())
+                .at("/data/id").asLong();
+        Long sectionId = createSection(courseId, "Video Module", instructorToken);
+        createLesson(sectionId, "Missing Video", "VIDEO", 300, false, instructorToken);
+
+        mockMvc.perform(patch("/api/v1/courses/{id}/publish", courseId)
+                        .header("Authorization", bearer(instructorToken)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", containsString("READY video")));
     }
 
     private Long createCategory(String name, String accessToken) throws Exception {
@@ -598,6 +735,34 @@ class CourseIntegrationTest {
                     "fileSizeBytes": 123456
                 }
                 """;
+    }
+
+    private void postBunnyWebhook(
+            String videoGuid,
+            int statusCode,
+            String libraryId,
+            ResultMatcher expectedStatus
+    ) throws Exception {
+        String rawBody = bunnyWebhookJson(videoGuid, statusCode, libraryId);
+        mockMvc.perform(post("/api/v1/videos/bunny/webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-BunnyStream-Signature-Version", "v1")
+                        .header("X-BunnyStream-Signature-Algorithm", "hmac-sha256")
+                        .header("X-BunnyStream-Signature", bunnySignature(rawBody))
+                        .content(rawBody))
+                .andExpect(expectedStatus);
+    }
+
+    private String bunnyWebhookJson(String videoGuid, int statusCode, String libraryId) {
+        return """
+                {"VideoLibraryId":%s,"VideoGuid":"%s","Status":%d}
+                """.formatted(libraryId, videoGuid, statusCode).trim();
+    }
+
+    private String bunnySignature(String rawBody) throws Exception {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec("webhook-secret".getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        return HexFormat.of().formatHex(mac.doFinal(rawBody.getBytes(StandardCharsets.UTF_8)));
     }
 
     private User createUser(String email, String fullName, RoleName roleName) {

@@ -169,6 +169,8 @@ public class SectionService {
                 .preview(lesson.isPreview())
                 .published(lesson.isPublished())
                 .orderIndex(lesson.getOrderIndex())
+                .hasVideo(lesson.getVideo() != null)
+                .videoStatus(lesson.getVideo() == null ? null : lesson.getVideo().getStatus())
                 .build();
     }
 

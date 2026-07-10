@@ -487,6 +487,12 @@ class CommerceIntegrationTest {
     void shouldCreateMomoPaymentAndCompleteViaIpn() throws Exception {
         when(momoClient.createPayment(any(MomoCreatePaymentPayload.class))).thenAnswer(invocation -> {
             MomoCreatePaymentPayload payload = invocation.getArgument(0);
+            assertThat(payload.partnerCode()).isEqualTo("MOMO");
+            assertThat(payload.storeName()).isEqualTo("Skillora");
+            assertThat(payload.storeId()).isEqualTo("SkilloraStore");
+            assertThat(payload.requestType()).isEqualTo("captureWallet");
+            assertThat(payload.ipnUrl()).isEqualTo("http://localhost:8080/api/v1/payments/momo/ipn");
+            assertThat(payload.redirectUrl()).isEqualTo("http://localhost:8080/api/v1/payments/momo/return");
             return new MomoCreatePaymentResult(
                     payload.partnerCode(),
                     payload.requestId(),
@@ -506,6 +512,10 @@ class CommerceIntegrationTest {
                 """.formatted(orderId), studentToken, status().isCreated());
         Long txId = createResponse.at("/data/paymentTransactionId").asLong();
         PaymentTransaction tx = paymentTransactionRepository.findById(txId).orElseThrow();
+        JsonNode rawRequest = objectMapper.readTree(tx.getRawRequest());
+        assertThat(rawRequest.at("/storeName").asText()).isEqualTo("Skillora");
+        assertThat(rawRequest.at("/partnerName").isMissingNode()).isTrue();
+        assertThat(rawRequest.at("/requestType").asText()).isEqualTo("captureWallet");
 
         MomoIpnRequest ipn = momoIpn(tx, 0, "Successful.", "qr", "1001");
         ipn.setSignature(paymentService.signMomoIpnForTest(ipn));

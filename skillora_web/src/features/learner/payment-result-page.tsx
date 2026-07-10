@@ -26,11 +26,12 @@ export function PaymentResultPage() {
   const paid = status === "PAID" || status === "SUCCESS";
   const failed = status === "FAILED" || status === "INVALID";
   const numericOrderId = orderId ? Number(orderId) : null;
+  const hasValidOrderId = typeof numericOrderId === "number" && Number.isFinite(numericOrderId);
 
   const order = useQuery({
     queryKey: queryKeys.order(numericOrderId),
     queryFn: () => commerceApi.getOrder(numericOrderId!),
-    enabled: Number.isFinite(numericOrderId),
+    enabled: hasValidOrderId,
   });
 
   const retry = useMutation({
@@ -80,7 +81,7 @@ export function PaymentResultPage() {
             </div>
 
             <div className="grid gap-1.5 text-xs text-muted-foreground bg-muted/30 w-full rounded-md p-3">
-              {orderId ? <span>Order Reference: #{orderId}</span> : null}
+              {hasValidOrderId ? <span>Order Reference: #{numericOrderId}</span> : null}
               {gateway ? <span>Gateway: {gateway}</span> : null}
               {code ? <span>Response Code: {code}</span> : null}
               {order.data?.failureReason ? (
@@ -112,9 +113,9 @@ export function PaymentResultPage() {
             <Separator />
 
             <div className="flex flex-wrap gap-2 justify-center w-full">
-              {orderId ? (
+              {hasValidOrderId ? (
                 <Button asChild className="flex-1 min-w-[120px]">
-                  <Link href={`/orders/${orderId}`}>View Order</Link>
+                  <Link href={`/orders/${numericOrderId}`}>View Order</Link>
                 </Button>
               ) : null}
               <Button asChild variant="outline" className="flex-1 min-w-[120px]">

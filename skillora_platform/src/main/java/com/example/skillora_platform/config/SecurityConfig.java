@@ -89,6 +89,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, Constants.PAYMENT_API_PREFIX + "/momo/return").permitAll()
                         .requestMatchers(HttpMethod.POST, Constants.PAYMENT_API_PREFIX + "/vnpay/ipn").permitAll()
                         .requestMatchers(HttpMethod.POST, Constants.PAYMENT_API_PREFIX + "/momo/ipn").permitAll()
+                        .requestMatchers(HttpMethod.POST, Constants.API_V1_PREFIX + "/videos/bunny/webhook").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions

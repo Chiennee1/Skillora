@@ -52,6 +52,7 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final CategoryRepository categoryRepository;
     private final CoursePermissionService permissionService;
+    private final CoursePublishingReadinessService publishingReadinessService;
     private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
@@ -200,6 +201,7 @@ public class CourseService {
                     "Only DRAFT or REJECTED courses can be submitted for review, current: " + course.getStatus(),
                     HttpStatus.CONFLICT);
         }
+        publishingReadinessService.requirePublishedVideoLessonsReady(course.getId());
 
         course.setStatus(CourseStatus.REVIEWING);
         course.setPublishedAt(null);

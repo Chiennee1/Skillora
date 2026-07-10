@@ -44,7 +44,7 @@ import { CategoryPicker } from "@/features/instructor/course-create";
 import { courseApi, instructorApi, learnerApi, practiceApi } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { queryKeys } from "@/lib/query-keys";
-import type { Course, CourseLevel, CourseVersion, LessonResource, Question, Quiz, Section } from "@/lib/types";
+import type { Course, CourseLevel, CourseVersion, LessonResource, Question, Quiz, Section, VideoStatus } from "@/lib/types";
 
 function csv(value: string) {
   return value
@@ -61,6 +61,52 @@ const lessonTypes: Array<{ label: string; value: LessonKind }> = [
   { label: "Quiz", value: "QUIZ" },
   { label: "Assignment", value: "ASSIGNMENT" },
 ];
+
+type BuilderLesson = NonNullable<Section["lessons"]>[number];
+
+function requiresReadyVideo(lesson: BuilderLesson) {
+  return (lesson.type ?? "VIDEO") === "VIDEO" && lesson.published !== false;
+}
+
+function videoReadyForReview(lesson: BuilderLesson) {
+  return !requiresReadyVideo(lesson) || (lesson.hasVideo === true && lesson.videoStatus === "READY");
+}
+
+function isProcessingVideoStatus(status?: VideoStatus | null) {
+  return status === "UPLOADING" || status === "PROCESSING";
+}
+
+function videoStatusLabel(status?: VideoStatus | null, hasVideo?: boolean) {
+  if (!hasVideo && !status) {
+    return "Missing";
+  }
+  if (status === "READY") {
+    return "Ready";
+  }
+  if (status === "FAILED") {
+    return "Failed";
+  }
+  if (status === "UPLOADING") {
+    return "Uploading";
+  }
+  if (status === "PROCESSING") {
+    return "Processing";
+  }
+  return status ?? "Missing";
+}
+
+function videoStatusVariant(status?: VideoStatus | null, hasVideo?: boolean): "default" | "secondary" | "destructive" | "outline" {
+  if (status === "READY") {
+    return "default";
+  }
+  if (status === "FAILED" || (!hasVideo && !status)) {
+    return "destructive";
+  }
+  if (isProcessingVideoStatus(status)) {
+    return "secondary";
+  }
+  return "outline";
+}
 
 export function CourseBuilderPage({ courseId }: { courseId: number }) {
   const queryClient = useQueryClient();
@@ -89,6 +135,12 @@ export function CourseBuilderPage({ courseId }: { courseId: number }) {
   const hasSection = (sections.data?.length ?? 0) > 0;
   const lessonCount =
     sections.data?.reduce((total, s) => total + (s.lessons?.length ?? 0), 0) ?? 0;
+  const publishedVideoLessons =
+    sections.data
+      ?.filter((section) => section.published !== false)
+      .flatMap((section) => section.lessons ?? [])
+      .filter(requiresReadyVideo) ?? [];
+  const videoLessonsReady = publishedVideoLessons.every(videoReadyForReview);
   const nextSectionOrder =
     Math.max(
       -1,
@@ -100,6 +152,7 @@ export function CourseBuilderPage({ courseId }: { courseId: number }) {
     { label: "Description", ready: Boolean(course.data?.description?.trim()) },
     { label: "At least one section", ready: hasSection },
     { label: "At least one lesson", ready: lessonCount > 0 },
+    { label: "Video lessons ready", ready: videoLessonsReady },
   ];
 
   const readyToSubmit = readiness.every((item) => item.ready);
@@ -730,13 +783,38 @@ function EditableLessonRow({
   const [contentDraft, setContentDraft] = React.useState<string | null>(null);
   const [videoFile, setVideoFile] = React.useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
+  const [awaitingProcessing, setAwaitingProcessing] = React.useState(false);
 
   const fullLesson = useQuery({
     queryKey: queryKeys.lesson(lesson.id),
     queryFn: () => learnerApi.getLesson(lesson.id),
   });
+  const refetchLesson = fullLesson.refetch;
 
   const contentValue = contentDraft ?? fullLesson.data?.content ?? "";
+  const backendVideoStatus = fullLesson.data?.video?.status ?? lesson.videoStatus ?? null;
+  const hasBackendVideo = Boolean(fullLesson.data?.video ?? lesson.hasVideo);
+  const videoStatus = awaitingProcessing && backendVideoStatus !== "READY" && backendVideoStatus !== "FAILED"
+    ? "PROCESSING"
+    : backendVideoStatus;
+  const hasVideo = hasBackendVideo || awaitingProcessing;
+
+  React.useEffect(() => {
+    if (backendVideoStatus === "READY" || backendVideoStatus === "FAILED") {
+      setAwaitingProcessing(false);
+    }
+  }, [backendVideoStatus]);
+
+  React.useEffect(() => {
+    if (!isProcessingVideoStatus(videoStatus)) {
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      void refetchLesson();
+      void queryClient.invalidateQueries({ queryKey: queryKeys.builderSections(courseId) });
+    }, 4000);
+    return () => window.clearInterval(intervalId);
+  }, [courseId, queryClient, refetchLesson, videoStatus]);
 
   const update = useMutation({
     mutationFn: () =>
@@ -794,9 +872,11 @@ function EditableLessonRow({
     },
     onSuccess: (ticket) => {
       toast.success(`Video upload completed. Processing video ${ticket.videoId}.`);
+      setAwaitingProcessing(true);
       setUploadProgress(null);
       setVideoFile(null);
-      fullLesson.refetch();
+      void refetchLesson();
+      void queryClient.invalidateQueries({ queryKey: queryKeys.builderSections(courseId) });
     },
     onError: (error) => {
       setUploadProgress(null);
@@ -946,6 +1026,16 @@ function EditableLessonRow({
             <span>{uploadProgress}%</span>
           </div>
           <Progress value={uploadProgress} />
+        </div>
+      ) : null}
+      {lessonType === "VIDEO" ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/10 px-3 py-2">
+          <span className="text-[10px] font-medium uppercase text-muted-foreground">
+            Video status
+          </span>
+          <Badge variant={videoStatusVariant(videoStatus, hasVideo)}>
+            {videoStatusLabel(videoStatus, hasVideo)}
+          </Badge>
         </div>
       ) : null}
       <LessonResourceManager

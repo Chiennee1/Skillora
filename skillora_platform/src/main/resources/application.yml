@@ -110,6 +110,13 @@ skillora:
       api-key: ${BUNNY_API_KEY:}
       tus-endpoint: ${BUNNY_TUS_ENDPOINT:https://video.bunnycdn.com/tusupload}
       upload-expiration: ${BUNNY_UPLOAD_EXPIRATION:PT24H}
+      webhook-signing-secret: ${BUNNY_WEBHOOK_SIGNING_SECRET:}
+      token-security-key: ${BUNNY_TOKEN_SECURITY_KEY:}
+      signed-playback-enabled: ${BUNNY_SIGNED_PLAYBACK_ENABLED:true}
+      embed-token-ttl: ${BUNNY_EMBED_TOKEN_TTL:PT2H}
+      pull-zone-host: ${BUNNY_PULL_ZONE_HOST:}
+      allowed-mime-types: ${BUNNY_ALLOWED_MIME_TYPES:video/mp4,video/webm,video/quicktime}
+      max-file-size-bytes: ${BUNNY_MAX_FILE_SIZE_BYTES:5368709120}
   ai:
     gemini:
       api-key: ${GEMINI_API_KEY:}
@@ -136,7 +143,7 @@ skillora:
       access-key: ${MOMO_ACCESS_KEY:}
       secret-key: ${MOMO_SECRET_KEY:}
       endpoint: ${MOMO_ENDPOINT:https://test-payment.momo.vn/v2/gateway/api/create}
-      request-type: ${MOMO_REQUEST_TYPE:payWithMethod}
+      request-type: ${MOMO_REQUEST_TYPE:captureWallet}
       partner-name: ${MOMO_PARTNER_NAME:Skillora}
       store-id: ${MOMO_STORE_ID:SkilloraStore}
   rate-limit:

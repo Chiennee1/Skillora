@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, FileText, ArrowLeft, BookOpen, AlertCircle } from "lucide-react";
+import { CheckCircle2, FileText, ArrowLeft, BookOpen, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AskAiButton } from "@/components/ask-ai-button";
@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { learnerApi } from "@/lib/api";
 import { formatDuration } from "@/lib/format";
 import { queryKeys } from "@/lib/query-keys";
+import type { LessonVideo } from "@/lib/types";
 
 export function LessonPage({ lessonId, enrollmentId }: { lessonId: number; enrollmentId?: number }) {
   const queryClient = useQueryClient();
@@ -88,11 +89,20 @@ export function LessonPage({ lessonId, enrollmentId }: { lessonId: number; enrol
                 }
               />
 
-              {/* Video Player Frame */}
               <Card className="overflow-hidden border border-border/70 rounded-[--radius-card] shadow-lg">
                 <CardContent className="p-0">
                   <div className="aspect-video bg-zinc-950 text-zinc-100 flex items-center justify-center relative shadow-inner">
-                    {lessonData.video?.playbackUrl ?? lessonData.videoUrl ? (
+                    {lessonData.video?.status === "READY" && lessonData.video.embedUrl ? (
+                      <iframe
+                        src={lessonData.video.embedUrl}
+                        title={lessonData.title}
+                        className="h-full w-full border-0"
+                        loading="lazy"
+                        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen;"
+                        allowFullScreen
+                      />
+                    ) : (lessonData.video?.playbackUrl ?? lessonData.videoUrl)
+                      && (lessonData.video?.status === "READY" || !lessonData.video?.status) ? (
                       <video
                         src={lessonData.video?.playbackUrl ?? lessonData.videoUrl ?? undefined}
                         className="h-full w-full object-contain"
@@ -100,10 +110,7 @@ export function LessonPage({ lessonId, enrollmentId }: { lessonId: number; enrol
                         controlsList="nodownload"
                       />
                     ) : (
-                      <div className="flex flex-col items-center gap-2.5 text-muted-foreground/80">
-                        <AlertCircle className="h-10 w-10 text-muted-foreground/40" />
-                        <span className="text-xs font-semibold">No video attached to this lesson</span>
-                      </div>
+                      <VideoState video={lessonData.video} />
                     )}
                   </div>
                 </CardContent>
@@ -174,5 +181,35 @@ export function LessonPage({ lessonId, enrollmentId }: { lessonId: number; enrol
         ) : null}
       </div>
     </AppShell>
+  );
+}
+
+function VideoState({ video }: { video?: LessonVideo | null }) {
+  if (video?.status === "UPLOADING" || video?.status === "PROCESSING") {
+    return (
+      <div className="flex flex-col items-center gap-2.5 text-muted-foreground/80">
+        <Loader2 className="h-10 w-10 animate-spin text-muted-foreground/40" />
+        <span className="text-xs font-semibold">Video is processing</span>
+      </div>
+    );
+  }
+
+  if (video?.status === "FAILED") {
+    return (
+      <div className="flex flex-col items-center gap-2.5 text-muted-foreground/80">
+        <AlertCircle className="h-10 w-10 text-destructive/70" />
+        <span className="text-xs font-semibold">Video processing failed</span>
+        {video.errorMessage ? (
+          <span className="max-w-md text-center text-[11px] text-muted-foreground">{video.errorMessage}</span>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-2.5 text-muted-foreground/80">
+      <AlertCircle className="h-10 w-10 text-muted-foreground/40" />
+      <span className="text-xs font-semibold">No video attached to this lesson</span>
+    </div>
   );
 }

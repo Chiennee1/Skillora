@@ -1,6 +1,7 @@
 package com.example.skillora_platform.course.dto;
 
 import com.example.skillora_platform.course.entity.LessonType;
+import com.example.skillora_platform.course.entity.VideoStatus;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -22,4 +23,6 @@ public class LessonSummaryResponse {
     private boolean preview;
     private boolean published;
     private int orderIndex;
+    private boolean hasVideo;
+    private VideoStatus videoStatus;
 }

@@ -46,6 +46,7 @@ public class LessonService {
     private final LessonResourceRepository lessonResourceRepository;
     private final QuizRepository quizRepository;
     private final AssignmentRepository assignmentRepository;
+    private final BunnyStreamUrlService bunnyStreamUrlService;
 
     @Transactional
     public LessonResponse create(Long sectionId, LessonCreateRequest request, String actorEmail) {
@@ -206,7 +207,7 @@ public class LessonService {
                 .preview(lesson.isPreview())
                 .published(lesson.isPublished())
                 .orderIndex(lesson.getOrderIndex())
-                .video(toVideoResponse(lesson.getVideo()))
+                .video(toVideoResponse(lesson.getVideo(), includeProtectedContent || lesson.isPreview()))
                 .resources(includeProtectedContent ? toResourceResponses(lesson.getId()) : List.of())
                 .deletedAt(lesson.getDeletedAt())
                 .createdAt(lesson.getCreatedAt())
@@ -266,7 +267,7 @@ public class LessonService {
         return candidate;
     }
 
-    private LessonVideoResponse toVideoResponse(LessonVideo video) {
+    private LessonVideoResponse toVideoResponse(LessonVideo video, boolean includePlayableEmbed) {
         if (video == null) {
             return null;
         }
@@ -274,8 +275,9 @@ public class LessonService {
                 .id(video.getId())
                 .provider(video.getProvider())
                 .assetId(video.getAssetId())
-                .playbackUrl(video.getPlaybackUrl())
-                .hlsUrl(video.getHlsUrl())
+                .playbackUrl(bunnyStreamUrlService.responsePlaybackUrl(video))
+                .embedUrl(includePlayableEmbed ? bunnyStreamUrlService.responseEmbedUrl(video) : null)
+                .hlsUrl(bunnyStreamUrlService.responseHlsUrl(video))
                 .thumbnailUrl(video.getThumbnailUrl())
                 .durationSeconds(video.getDurationSeconds())
                 .sizeBytes(video.getSizeBytes())
